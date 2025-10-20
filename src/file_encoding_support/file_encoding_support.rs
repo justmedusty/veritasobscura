@@ -18,13 +18,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 
     use std::fs::File;
     use std::io::Error;
-
-pub struct ImageSupport {
+pub struct ImageSupport<T : FileEncodingSupport> {
     image_file : File,
     encoding : FileEncoding,
     encoding_method : FileEncodingMethod,
-    file_encoding_function_derivation: FileEncodingFunctionDerivation
-
+    file_encoding_function_derivation: FileEncodingFunctionDerivation,
+    pixel_map : Vec<u8>,
+    encoding_support : T,
 }
     #[derive(Copy, Clone, Debug, Eq, PartialEq)]
     pub enum FileEncoding {
@@ -52,17 +52,17 @@ pub struct ImageSupport {
         /*
            Will return pixel map or will return error
         */
-        fn parse_file(&mut self, file_location : &str) -> Result<Error, Vec<u8>>;
+        fn parse_file(&mut self, file_location : &str);
 
         /*
            Vec is JUST the pixel map not the entire file, needs to be pixel map since there may be decompression involved
         */
-        fn embed_data(&mut self, data: &mut Vec<u8>) -> Result<Error, &Vec<u8>>;
+        fn embed_data(&mut self, data: &mut Vec<u8>);
 
         /*
         Vec is JUST the pixel map not the entire file, needs to be pixel map since there may be decompression involved
         */
-        fn retrieve_data(&mut self, data: &Vec<u8>) -> Result<Error, Vec<u8>>;
+        fn retrieve_data(&mut self, data: &Vec<u8>);
 
-        fn write_file(&mut self, file: &mut File, location: &str) -> Result<Error, u64>;
+        fn write_file(&mut self, file: &mut File, location: &str);
     }
