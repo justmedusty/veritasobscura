@@ -19,6 +19,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 mod filetype_support;
 mod file_encoding_support;
 mod arg_handling;
+mod mathematics_support;
 
 fn main() {
     println!("Hello, world!");
