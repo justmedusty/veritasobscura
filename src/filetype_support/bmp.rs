@@ -16,7 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 use std::fs::File;
-use crate::file_encoding_support::file_encoding_support::*;
+use crate::file_encoding_support::file_encoding_support;
+use crate::file_encoding_support::file_encoding_support::FileEncodingSupport;
 const BMP_MAGIC : u16 = 0x4D42;
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
@@ -98,6 +99,7 @@ pub struct BmpImageParser<P>{
     pixel_map : BmpBitmap<P>
 }
 
+
 /*
     We will just add support for 24 bit and 32 bit pixel sizes, will likely only encounter 24 bit pixels
  */
@@ -170,3 +172,25 @@ impl BmpImageParser<RgbPixel> {
         }
     }
 }
+
+
+
+impl<P> FileEncodingSupport for BmpImageParser<P> {
+    fn parse_file(&mut self, file_location: &str) {
+        todo!()
+    }
+
+    fn embed_data(&mut self, data: &mut Vec<u8>) {
+        todo!()
+    }
+
+    fn retrieve_data(&mut self) {
+        todo!()
+    }
+
+    fn write_file(&mut self, file: &mut File, location: &str) {
+        todo!()
+    }
+}
+
+

@@ -17,3 +17,4 @@
  */
 
 pub mod file_encoding_support;
+mod pixel;

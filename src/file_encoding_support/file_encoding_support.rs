@@ -18,13 +18,23 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 
 use std::fs::File;
 use std::io::Error;
-pub struct ImageSupport<T: FileEncodingSupport + FileEncoding> {
+use crate::file_encoding_support::pixel::Pixel;
+
+pub struct ImageSupport<T: FileEncodingSupport + FileEncodingAlgorithms, P : Pixel> {
     image_file: File,
     encoding: FileEncoding,
     encoding_method: FileEncodingMethod,
     file_encoding_function_derivation: FileEncodingFunctionDerivation,
-    pixel_map: Vec<u8>,
+    operation: Operation,
+    pixel_map: Vec<P>,
+    data : Vec<u8>,
     encoding_support: T,
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum Operation {
+    Embed,
+    Extract
 }
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum FileEncoding {
@@ -62,12 +72,12 @@ pub trait FileEncodingSupport {
     /*
     Vec is JUST the pixel map not the entire file, needs to be pixel map since there may be decompression involved
     */
-    fn retrieve_data(&mut self, data: &Vec<u8>);
+    fn retrieve_data(&mut self);
 
     fn write_file(&mut self, file: &mut File, location: &str);
 }
 
-enum WaveType {
+pub enum WaveType {
     Sine,
     Cosine,
 }
@@ -75,9 +85,8 @@ enum WaveType {
 /*
     The idea at the time of writing this is the other parameters like the FileEncoding as defined above, will be stored in the specific object and can be referenced internally
  */
-pub trait FileEncoding{
+pub trait FileEncodingAlgorithms{
     fn left_to_right(&self);
     fn top_to_bottom(&self);
-    fn wave(&self, wave_type: WaveType, amplitude: f32, phase: f32, frequency: f32) -> Vec<P>;
-
+    fn wave(&self, wave_type: WaveType, amplitude: f32, phase: f32, frequency: f32);
 }
