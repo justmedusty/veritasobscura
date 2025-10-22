@@ -70,7 +70,7 @@ struct BitmapColorTable {
 
 // For a 24-bit BMP, a pixel is usually 3 bytes: B, G, R.
 #[repr(C, packed)]
-#[derive(Debug, Copy)]
+#[derive(Debug, Default,Clone)]
 struct RgbPixel {
     pub blue: u8,
     pub green: u8,
@@ -79,7 +79,7 @@ struct RgbPixel {
 
 // For a 32-bit BMP, a pixel is 4 bytes: B, G, R, A (or reserved)
 #[repr(C, packed)]
-#[derive(Debug, Copy)]
+#[derive(Debug, Default,Clone)]
 struct RgbaPixel {
     pub blue: u8,
     pub green: u8,
@@ -127,29 +127,6 @@ impl Pixel for RgbaPixel {
     fn set_alpha(&mut self, value: u8) { self.alpha = value }
 }
 
-impl Default for RgbaPixel {
-    fn default() -> Self {
-        RgbaPixel { red: 0, green: 0, blue: 0, alpha: 255 }
-    }
-}
-
-impl Default for RgbPixel{
-    fn default() -> Self {
-        RgbPixel{red: 0, green: 0, blue: 0}
-    }
-}
-
-impl Clone for RgbaPixel {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl Clone for RgbPixel {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
 /*
     We will just add support for 24 bit and 32 bit pixel sizes, will likely only encounter 24 bit pixels
  */
