@@ -18,6 +18,8 @@
 use std::fs::File;
 use crate::file_encoding_support::file_encoding_support;
 use crate::file_encoding_support::file_encoding_support::FileEncodingSupport;
+use crate::file_encoding_support::pixel::Pixel;
+
 const BMP_MAGIC : u16 = 0x4D42;
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
@@ -68,7 +70,7 @@ struct BitmapColorTable {
 
 // For a 24-bit BMP, a pixel is usually 3 bytes: B, G, R.
 #[repr(C, packed)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Copy)]
 struct RgbPixel {
     pub blue: u8,
     pub green: u8,
@@ -77,7 +79,7 @@ struct RgbPixel {
 
 // For a 32-bit BMP, a pixel is 4 bytes: B, G, R, A (or reserved)
 #[repr(C, packed)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Copy)]
 struct RgbaPixel {
     pub blue: u8,
     pub green: u8,
@@ -92,20 +94,76 @@ struct BmpBitmap<P> {
     pub pixel_map : Vec<P>
 }
 
-pub struct BmpImageParser<P>{
+pub struct BmpImageParser<P : Pixel>{
     bmp_header : BitmapFileHeader,
     bmp_dib_header: BitmapDIBHeader,
     pixel_size: u8,
     pixel_map : BmpBitmap<P>
 }
 
+// For RGB pixel type
+impl Pixel for RgbPixel {
+    fn red(&self) -> u8 { self.red }
+    fn green(&self) -> u8 { self.green }
+    fn blue(&self) -> u8 { self.blue }
+    fn alpha(&self) -> u8 { 255 } // No alpha in RGB, so always 255
 
+    fn set_red(&mut self, value: u8) { self.red = value }
+    fn set_green(&mut self, value: u8) { self.green = value }
+    fn set_blue(&mut self, value: u8) { self.blue = value }
+    fn set_alpha(&mut self, value: u8) { /* No-op for RGB */ }
+}
+
+// For RGBA pixel type
+impl Pixel for RgbaPixel {
+    fn red(&self) -> u8 { self.red }
+    fn green(&self) -> u8 { self.green }
+    fn blue(&self) -> u8 { self.blue }
+    fn alpha(&self) -> u8 { self.alpha }
+
+    fn set_red(&mut self, value: u8) { self.red = value }
+    fn set_green(&mut self, value: u8) { self.green = value }
+    fn set_blue(&mut self, value: u8) { self.blue = value }
+    fn set_alpha(&mut self, value: u8) { self.alpha = value }
+}
+
+impl Default for RgbaPixel {
+    fn default() -> Self {
+        RgbaPixel { red: 0, green: 0, blue: 0, alpha: 255 }
+    }
+}
+
+impl Default for RgbPixel{
+    fn default() -> Self {
+        RgbPixel{red: 0, green: 0, blue: 0}
+    }
+}
+
+impl Clone for RgbaPixel {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl Clone for RgbPixel {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
 /*
     We will just add support for 24 bit and 32 bit pixel sizes, will likely only encounter 24 bit pixels
  */
-impl BmpImageParser<RgbaPixel> {
+
+impl<P: Pixel + Default + Clone> BmpImageParser<P> {
+    // The constructor now works for any type that implements the Pixel trait
     pub fn new(width: u32, height: u32) -> Self {
-        let pixel_map = vec![RgbaPixel { red: 0, green: 0, blue: 0, alpha: 255 }; (width * height) as usize];
+        let pixel_map = vec![P::default(); (width * height) as usize];
+
+        let pixel_size = if std::mem::size_of::<P>() == 3 {
+            3 // RGB pixel type (3 bytes)
+        } else {
+            4 // RGBA pixel type (4 bytes)
+        };
 
         BmpImageParser {
             bmp_header: BitmapFileHeader {
@@ -128,42 +186,7 @@ impl BmpImageParser<RgbaPixel> {
                 bi_clr_used: 0,
                 bi_clr_important: 0,
             },
-            pixel_size: 4,  // RgbPixel is 4 bytes (1 byte each for R, G, B, A)
-            pixel_map: BmpBitmap {
-                width,
-                height,
-                pixel_map,
-            },
-        }
-    }
-}
-
-impl BmpImageParser<RgbPixel> {
-    pub fn new(width: u32, height: u32) -> Self {
-        let pixel_map = vec![RgbPixel { red: 0, green: 0, blue: 0 }; (width * height) as usize];
-
-        BmpImageParser {
-            bmp_header: BitmapFileHeader {
-                bf_type: 0,
-                bf_size: 0,
-                bf_reserved1: 0,
-                bf_reserved2: 0,
-                bf_off_bits: 0,
-            },
-            bmp_dib_header: BitmapDIBHeader {
-                bi_size: 0,
-                bi_width: 0,
-                bi_height: 0,
-                bi_planes: 0,
-                bi_bit_count: 0,
-                bi_compression: 0,
-                bi_size_image: 0,
-                bi_x_pels_per_meter: 0,
-                bi_y_pels_per_meter: 0,
-                bi_clr_used: 0,
-                bi_clr_important: 0,
-            },
-            pixel_size: 3,  // RgbPixel is 3 bytes (1 byte each for R, G, B)
+            pixel_size,
             pixel_map: BmpBitmap {
                 width,
                 height,
@@ -174,8 +197,7 @@ impl BmpImageParser<RgbPixel> {
 }
 
 
-
-impl<P> FileEncodingSupport for BmpImageParser<P> {
+impl<P : Pixel> FileEncodingSupport for BmpImageParser<P> {
     fn parse_file(&mut self, file_location: &str) {
         todo!()
     }
