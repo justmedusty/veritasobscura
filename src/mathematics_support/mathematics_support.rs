@@ -16,6 +16,43 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 
-trait MathematicsSupport {
-    
+fn sin_wave(input: u64) -> f64 {
+    (input as f64).sin()
 }
+
+fn sin_scaled(input: u64, scale: f64) -> u64 {
+    ((input as f64).sin() * scale) as u64
+}
+
+fn cos_wave(input: u64) -> f64 {
+    (input as f64).cos()
+}
+
+fn cos_scaled(input: u64, scale: f64) -> u64 {
+    ((input as f64).cos() * scale) as u64
+}
+
+fn tan_wave(input: u64) -> f64 {
+    (input as f64).tan()
+}
+
+fn exp_wave(input: u64) -> f64 {
+    (input as f64).exp()
+}
+
+fn log_wave(input: u64) -> f64 {
+    (input as f64).ln()
+}
+
+fn sqrt_wave(input: u64) -> f64 {
+    (input as f64).sqrt()
+}
+
+fn sqrt_scaled(input: u64, scale: f64) -> u64 {
+    ((input as f64).sqrt() * scale) as u64
+}
+
+fn mod_wave(input: u64, modulus: u64) -> u64 {
+    input % modulus
+}
+
