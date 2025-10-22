@@ -75,6 +75,8 @@ pub trait FileEncodingSupport {
     fn retrieve_data(&mut self);
 
     fn write_file(&mut self, file: &mut File, location: &str);
+
+    fn validate_state(&mut self);
 }
 
 pub enum WaveType {
