@@ -59,20 +59,24 @@ pub enum FileEncodingFunctionDerivation {
 }
 
 pub trait FileEncodingSupport {
+
+
+
     /*
        Will return pixel map or will return error
     */
+
     fn parse_file(&mut self, file_location: &str);
 
     /*
        Vec is JUST the pixel map not the entire file, needs to be pixel map since there may be decompression involved
     */
-    fn embed_data(&mut self, data: &mut Vec<u8>);
+    fn embed_data(&mut self, data: &mut Vec<u8>, encoding: FileEncoding, encoding_method: FileEncodingMethod, file_encoding_function_derivation: FileEncodingFunctionDerivation);
 
     /*
     Vec is JUST the pixel map not the entire file, needs to be pixel map since there may be decompression involved
     */
-    fn retrieve_data(&mut self);
+    fn retrieve_data(&mut self,encoding: FileEncoding, encoding_method: FileEncodingMethod, file_encoding_function_derivation: FileEncodingFunctionDerivation);
 
     fn write_file(&mut self, file: &mut File, location: &str);
 

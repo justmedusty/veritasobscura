@@ -16,8 +16,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 use crate::file_encoding_support::file_encoding_support;
-use crate::file_encoding_support::file_encoding_support::FileEncodingSupport;
+use crate::file_encoding_support::file_encoding_support::{
+    FileEncoding, FileEncodingFunctionDerivation, FileEncodingMethod, FileEncodingSupport,
+    Operation,
+};
 use crate::file_encoding_support::pixel::Pixel;
+use crate::filetype_support::bmp::BmpPixelType::{Rgb, Rgba};
 use std::fs::File;
 use std::io::{Read, Seek};
 use std::process::exit;
@@ -98,6 +102,7 @@ pub struct BmpImageParser<P: Pixel> {
     pixel_size: u8,
     padding_size: u8,
     pixel_map: BmpBitmap<P>,
+    image_file: File,
 }
 
 // For RGB pixel type
@@ -161,62 +166,65 @@ impl Pixel for RgbaPixel {
    We will just add support for 24 bit and 32 bit pixel sizes, will likely only encounter 24 bit pixels
 */
 
-impl<P: Pixel + Default + Clone> BmpImageParser<P> {
-    // The constructor now works for any type that implements the Pixel trait
-    pub fn new(width: u32, height: u32) -> Self {
-        let pixel_map = vec![P::default(); (width * height) as usize];
-
-        let pixel_size = if std::mem::size_of::<P>() == 3 {
-            3 // RGB pixel type (3 bytes)
-        } else {
-            4 // RGBA pixel type (4 bytes)
-        };
-
-        BmpImageParser {
-            bmp_header: BitmapFileHeader {
-                bf_type: 0,
-                bf_size: 0,
-                bf_reserved1: 0,
-                bf_reserved2: 0,
-                bf_off_bits: 0,
-            },
-            bmp_dib_header: BitmapDIBHeader {
-                bi_size: 0,
-                bi_width: 0,
-                bi_height: 0,
-                bi_planes: 0,
-                bi_bit_count: 0,
-                bi_compression: 0,
-                bi_size_image: 0,
-                bi_x_pels_per_meter: 0,
-                bi_y_pels_per_meter: 0,
-                bi_clr_used: 0,
-                bi_clr_important: 0,
-            },
-            pixel_size,
-            padding_size: 0,
-            pixel_map: BmpBitmap {
-                width,
-                height,
-                pixel_map,
-            },
-        }
-    }
-
-    pub fn calculate_padding(&mut self) {
-        if (self.padding_size != 0) {
-            return;
-        }
-
-        if (self.pixel_size == 0) {
-            println!("bmp.rs : calculate padding called before pixel size is determined!");
-            return;
-        }
-
-        self.padding_size = ((self.pixel_map.width as u64 * self.pixel_size as u64) % 4) as u8;
-    }
+pub enum BmpPixelType {
+    Rgb,
+    Rgba,
 }
 
+/*
+pub fn dmp_derive_pixel_type(file_location: &str) -> BmpPixelType {
+    let mut file: File = match File::open(file_location) {
+        Ok(file) => file,
+        Err(e) => {
+            println!(
+                "bmp.rs: derive_pixel_type: Failed to open file {} , exiting ...",
+                file_location
+            );
+            exit(1);
+        }
+    };
+
+    match file.seek_relative(14) {
+        Ok(x) => x,
+        Err(_) => {
+            println!(
+                "bmp.rs: parse_file: Failed to seek in file {} , exiting ...",
+                file_location
+            );
+            exit(1);
+        }
+    };
+
+    let mut dib_header_bytes = [0u8; std::mem::size_of::<BitmapDIBHeader>()];
+
+    match file.read(&mut dib_header_bytes) {
+        Ok(i) => unsafe {
+            let dib_header = dib_header_bytes.as_ptr() as *const BitmapDIBHeader;
+
+            match (*(dib_header.bi_bit_count)) / 8){
+                3 => {return Rgb},
+
+                4 => {return Rgba},
+
+                _ => {
+                    println!(
+                        "bmp.rs: dmp_derive_pixel_type: Pixel size does not make sense, exiting ..."
+                    );
+                    exit(1);
+                }
+            }
+        },
+
+        Err(e) => {
+            println!(
+                "bmp.rs: derive_pixel_type: Failed to read file header, exiting ... {}",
+                e
+            );
+            exit(1);
+        }
+    }
+}
+*/
 impl<P: Pixel> FileEncodingSupport for BmpImageParser<P> {
     fn parse_file(&mut self, file_location: &str) {
         let header_size = std::mem::size_of::<BitmapFileHeader>();
@@ -242,8 +250,12 @@ impl<P: Pixel> FileEncodingSupport for BmpImageParser<P> {
                     exit(1);
                 }
                 unsafe {
-                    let header_pointer : *mut BitmapFileHeader = &mut self.bmp_header ;
-                    std::ptr::copy(header_bytes.as_ptr(),header_pointer as *mut u8,header_bytes.len());
+                    let header_pointer: *mut BitmapFileHeader = &mut self.bmp_header;
+                    std::ptr::copy(
+                        header_bytes.as_ptr(),
+                        header_pointer as *mut u8,
+                        header_bytes.len(),
+                    );
                 }
             }
             Err(e) => {
@@ -268,11 +280,20 @@ impl<P: Pixel> FileEncodingSupport for BmpImageParser<P> {
 
         let mut dib_header_bytes = [0u8; std::mem::size_of::<BitmapDIBHeader>()];
 
-        match file.read(&mut header_bytes) {
+        match file.read(&mut dib_header_bytes) {
             Ok(i) => {
                 if i != dib_header_size {
                     println!("bmp.rs: parse_file: File DIB Header Size Mismatch, exiting ...");
                     exit(1);
+                }
+
+                unsafe {
+                    let dib_header_pointer: *mut BitmapDIBHeader = &mut self.bmp_dib_header;
+                    std::ptr::copy(
+                        dib_header_bytes.as_ptr(),
+                        dib_header_pointer as *mut u8,
+                        dib_header_bytes.len(),
+                    );
                 }
             }
             Err(e) => {
@@ -283,13 +304,39 @@ impl<P: Pixel> FileEncodingSupport for BmpImageParser<P> {
                 exit(1);
             }
         }
+
+        self.pixel_map.width = self.bmp_dib_header.bi_width as u32;
+        self.pixel_map.height = self.bmp_dib_header.bi_height as u32;
+
+        if self.bmp_dib_header.bi_size != 40 {
+            /*
+               Bit extreme, we'll keep it for now and see.
+               If V5 headers are common I'll remove this
+            */
+            println!("bmp.rs: parse_file: File Size Mismatch, exiting ...");
+            exit(1);
+        }
+
+        self.padding_size = ((self.pixel_map.width as u64 * self.pixel_size as u64) % 4) as u8;
+        self.pixel_size = (self.bmp_dib_header.bi_bit_count / 8) as u8;
     }
 
-    fn embed_data(&mut self, data: &mut Vec<u8>) {
+    fn embed_data(
+        &mut self,
+        data: &mut Vec<u8>,
+        encoding: FileEncoding,
+        encoding_method: FileEncodingMethod,
+        file_encoding_function_derivation: FileEncodingFunctionDerivation,
+    ) {
         todo!()
     }
 
-    fn retrieve_data(&mut self) {
+    fn retrieve_data(
+        &mut self,
+        encoding: FileEncoding,
+        encoding_method: FileEncodingMethod,
+        file_encoding_function_derivation: FileEncodingFunctionDerivation,
+    ) {
         todo!()
     }
 
