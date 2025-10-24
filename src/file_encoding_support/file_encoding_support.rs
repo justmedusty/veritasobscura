@@ -18,15 +18,19 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 
 use std::fs::File;
 use std::io::Error;
+use std::rc::Rc;
 use crate::file_encoding_support::pixel::Pixel;
-
-pub struct ImageSupport<T: FileEncodingSupport + FileEncodingAlgorithms, P : Pixel> {
+pub struct NewFile {
+    new_filename: String,
+    file_length : usize,
+}
+pub struct ImageSupport<T: FileEncodingSupport + FileEncodingAlgorithms> {
     image_file: File,
+    new_file: NewFile,
     encoding: FileEncoding,
     encoding_method: FileEncodingMethod,
     file_encoding_function_derivation: FileEncodingFunctionDerivation,
     operation: Operation,
-    pixel_map: Vec<P>,
     data : Vec<u8>,
     encoding_support: T,
 }
@@ -59,8 +63,6 @@ pub enum FileEncodingFunctionDerivation {
 }
 
 pub trait FileEncodingSupport {
-
-
 
     /*
        Will return pixel map or will return error

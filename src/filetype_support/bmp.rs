@@ -25,6 +25,7 @@ use crate::filetype_support::bmp::BmpPixelType::{Rgb, Rgba};
 use std::fs::File;
 use std::io::{Read, Seek};
 use std::process::exit;
+use std::rc::Rc;
 use std::{io, mem};
 
 const BMP_MAGIC: u16 = 0x4D42;
@@ -90,19 +91,20 @@ struct RgbaPixel {
 }
 
 #[repr(C, packed)]
-struct BmpBitmap<P> {
+struct BmpBitmap {
     pub width: u32,
     pub height: u32,
-    pub pixel_map: Vec<P>,
+    pub pixels: Rc<Vec<u8>>,
 }
 
-pub struct BmpImageParser<P: Pixel> {
+pub struct BmpImageParser {
     bmp_header: BitmapFileHeader,
     bmp_dib_header: BitmapDIBHeader,
     pixel_size: u8,
     padding_size: u8,
-    pixel_map: BmpBitmap<P>,
+    pixel_map: BmpBitmap,
     image_file: File,
+    file_data: Box<u8>,
 }
 
 // For RGB pixel type
@@ -129,7 +131,8 @@ impl Pixel for RgbPixel {
     fn set_blue(&mut self, value: u8) {
         self.blue = value
     }
-    fn set_alpha(&mut self, value: u8) { /* No-op for RGB */
+    fn set_alpha(&mut self, value: u8) {
+        /* No-op for RGB */
     }
 }
 
@@ -171,61 +174,7 @@ pub enum BmpPixelType {
     Rgba,
 }
 
-/*
-pub fn dmp_derive_pixel_type(file_location: &str) -> BmpPixelType {
-    let mut file: File = match File::open(file_location) {
-        Ok(file) => file,
-        Err(e) => {
-            println!(
-                "bmp.rs: derive_pixel_type: Failed to open file {} , exiting ...",
-                file_location
-            );
-            exit(1);
-        }
-    };
-
-    match file.seek_relative(14) {
-        Ok(x) => x,
-        Err(_) => {
-            println!(
-                "bmp.rs: parse_file: Failed to seek in file {} , exiting ...",
-                file_location
-            );
-            exit(1);
-        }
-    };
-
-    let mut dib_header_bytes = [0u8; std::mem::size_of::<BitmapDIBHeader>()];
-
-    match file.read(&mut dib_header_bytes) {
-        Ok(i) => unsafe {
-            let dib_header = dib_header_bytes.as_ptr() as *const BitmapDIBHeader;
-
-            match (*(dib_header.bi_bit_count)) / 8){
-                3 => {return Rgb},
-
-                4 => {return Rgba},
-
-                _ => {
-                    println!(
-                        "bmp.rs: dmp_derive_pixel_type: Pixel size does not make sense, exiting ..."
-                    );
-                    exit(1);
-                }
-            }
-        },
-
-        Err(e) => {
-            println!(
-                "bmp.rs: derive_pixel_type: Failed to read file header, exiting ... {}",
-                e
-            );
-            exit(1);
-        }
-    }
-}
-*/
-impl<P: Pixel> FileEncodingSupport for BmpImageParser<P> {
+impl FileEncodingSupport for BmpImageParser {
     fn parse_file(&mut self, file_location: &str) {
         let header_size = std::mem::size_of::<BitmapFileHeader>();
         let dib_header_size = std::mem::size_of::<BitmapDIBHeader>();
@@ -241,68 +190,49 @@ impl<P: Pixel> FileEncodingSupport for BmpImageParser<P> {
             }
         };
 
-        let mut header_bytes = [0u8; std::mem::size_of::<BitmapFileHeader>()];
-
-        match file.read(&mut header_bytes) {
-            Ok(i) => {
-                if i != header_size {
-                    println!("bmp.rs: parse_file: File Header Size Mismatch, exiting ...");
-                    exit(1);
-                }
-                unsafe {
-                    let header_pointer: *mut BitmapFileHeader = &mut self.bmp_header;
-                    std::ptr::copy(
-                        header_bytes.as_ptr(),
-                        header_pointer as *mut u8,
-                        header_bytes.len(),
-                    );
-                }
-            }
-            Err(e) => {
-                println!(
-                    "bmp.rs: parse_file: Failed to read from file {} , exiting ...",
-                    file_location
-                );
-                exit(1);
-            }
-        }
-
-        match file.seek_relative(14) {
-            Ok(x) => x,
+        let file_size: u32 = match file.metadata() {
+            Ok(metadata) => metadata.len() as u32,
             Err(_) => {
                 println!(
-                    "bmp.rs: parse_file: Failed to seek in file {} , exiting ...",
+                    "bmp.rs : parse_file: Error opening file {} metadata! Exiting...",
                     file_location
                 );
                 exit(1);
             }
         };
 
-        let mut dib_header_bytes = [0u8; std::mem::size_of::<BitmapDIBHeader>()];
+        let mut file_data = Vec::with_capacity(file_size as usize);
 
-        match file.read(&mut dib_header_bytes) {
-            Ok(i) => {
-                if i != dib_header_size {
-                    println!("bmp.rs: parse_file: File DIB Header Size Mismatch, exiting ...");
-                    exit(1);
-                }
-
-                unsafe {
-                    let dib_header_pointer: *mut BitmapDIBHeader = &mut self.bmp_dib_header;
-                    std::ptr::copy(
-                        dib_header_bytes.as_ptr(),
-                        dib_header_pointer as *mut u8,
-                        dib_header_bytes.len(),
-                    );
-                }
-            }
+        match file.read_to_end(&mut file_data) {
+            Ok(_) => (),
             Err(e) => {
                 println!(
-                    "bmp.rs: parse_file: Failed to read from file {} , exiting ...",
-                    file_location
+                    "bmp.rs: parse_file: Error reading file {} to end with err {}",
+                    file_location, e
                 );
                 exit(1);
             }
+        }
+
+        let header_size = std::mem::size_of::<BitmapFileHeader>();
+
+        unsafe {
+            let header_pointer: *mut BitmapFileHeader = &mut self.bmp_header;
+            std::ptr::copy(
+                file_data[0] as *mut u8,
+                header_pointer as *mut u8,
+                header_size,
+            );
+        }
+        let dib_header_size = mem::size_of::<BitmapDIBHeader>();
+
+        unsafe {
+            let dib_header_pointer: *mut BitmapDIBHeader = &mut self.bmp_dib_header;
+            std::ptr::copy(
+                file_data[14] as *mut u8,
+                dib_header_pointer as *mut u8,
+                dib_header_size,
+            );
         }
 
         self.pixel_map.width = self.bmp_dib_header.bi_width as u32;
@@ -319,6 +249,10 @@ impl<P: Pixel> FileEncodingSupport for BmpImageParser<P> {
 
         self.padding_size = ((self.pixel_map.width as u64 * self.pixel_size as u64) % 4) as u8;
         self.pixel_size = (self.bmp_dib_header.bi_bit_count / 8) as u8;
+
+        self.padding_size = ((self.pixel_map.width * self.pixel_size as u32) % 4) as u8;
+
+       // self.pixel_map.pixels = Vec::new(Rc::as_ptr(file_data[self.bmp_header.bf_off_bits as usize])) ;
     }
 
     fn embed_data(
