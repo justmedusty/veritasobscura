@@ -94,7 +94,7 @@ struct RgbaPixel {
 struct BmpBitmap {
     pub width: u32,
     pub height: u32,
-    pub pixels: Rc<Vec<u8>>,
+    pub pixel_map_start: u64, // File offset where pixel map begins, will be indexed via file_data
 }
 
 pub struct BmpImageParser {
@@ -104,7 +104,8 @@ pub struct BmpImageParser {
     padding_size: u8,
     pixel_map: BmpBitmap,
     image_file: File,
-    file_data: Box<u8>,
+    file_data: Box<Vec<u8>>,
+    ready: bool
 }
 
 // For RGB pixel type
@@ -120,19 +121,57 @@ impl Pixel for RgbPixel {
     }
     fn alpha(&self) -> u8 {
         255
-    } // No alpha in RGB, so always 255
+    }// No alpha in RGB, so always 255
 
+    fn first(&self) -> u8 {
+        self.blue
+    }
+
+    fn second(&self) -> u8 {
+        self.green
+    }
+    fn third(&self) -> u8 {
+        self.red
+    }
+    fn fourth(&self) -> u8 {
+        255
+    }
     fn set_red(&mut self, value: u8) {
         self.red = value
     }
+
     fn set_green(&mut self, value: u8) {
         self.green = value
     }
+
     fn set_blue(&mut self, value: u8) {
         self.blue = value
     }
+
+    fn set_first(&mut self, value: u8) {
+        self.blue = value
+    }
+
+    fn set_second(&mut self, value: u8) {
+        self.green = value
+    }
+
+    fn set_third(&mut self, value: u8) {
+        self.red = value
+    }
+
+    fn set_fourth(&mut self, value: u8) {
+        println!("bmp.rs RgbPixel set_fourth called on a 3 byte pixel! This is a bug! Exiting");
+        exit(1)
+    }
+
     fn set_alpha(&mut self, value: u8) {
-        /* No-op for RGB */
+        println!("bmp.rs RgbPixel set_alpha called on a 3 byte pixel! This is a bug! Exiting");
+        exit(1)
+    }
+
+    fn pixel_size(&self) -> usize {
+        3
     }
 }
 
@@ -151,17 +190,53 @@ impl Pixel for RgbaPixel {
         self.alpha
     }
 
+    fn first(&self) -> u8 {
+        self.blue
+    }
+
+    fn second(&self) -> u8 {
+        self.green
+    }
+    fn third(&self) -> u8 {
+        self.red
+    }
+    fn fourth(&self) -> u8 {
+        self.alpha
+    }
     fn set_red(&mut self, value: u8) {
         self.red = value
     }
+
     fn set_green(&mut self, value: u8) {
         self.green = value
     }
+
     fn set_blue(&mut self, value: u8) {
         self.blue = value
     }
+
+    fn set_first(&mut self, value: u8) {
+        self.blue = value
+    }
+
+    fn set_second(&mut self, value: u8) {
+        self.green = value
+    }
+
+    fn set_third(&mut self, value: u8) {
+        self.red = value
+    }
+
+    fn set_fourth(&mut self, value: u8) {
+        self.alpha = value
+    }
+
     fn set_alpha(&mut self, value: u8) {
         self.alpha = value
+    }
+
+    fn pixel_size(&self) -> usize {
+        4
     }
 }
 
@@ -201,9 +276,9 @@ impl FileEncodingSupport for BmpImageParser {
             }
         };
 
-        let mut file_data = Vec::with_capacity(file_size as usize);
+        self.file_data = Box::new(Vec::<u8>::with_capacity(file_size as usize));
 
-        match file.read_to_end(&mut file_data) {
+        match file.read_to_end(&mut self.file_data) {
             Ok(_) => (),
             Err(e) => {
                 println!(
@@ -219,7 +294,7 @@ impl FileEncodingSupport for BmpImageParser {
         unsafe {
             let header_pointer: *mut BitmapFileHeader = &mut self.bmp_header;
             std::ptr::copy(
-                file_data[0] as *mut u8,
+                self.file_data[0] as *mut u8,
                 header_pointer as *mut u8,
                 header_size,
             );
@@ -229,7 +304,7 @@ impl FileEncodingSupport for BmpImageParser {
         unsafe {
             let dib_header_pointer: *mut BitmapDIBHeader = &mut self.bmp_dib_header;
             std::ptr::copy(
-                file_data[14] as *mut u8,
+                self.file_data[14] as *mut u8,
                 dib_header_pointer as *mut u8,
                 dib_header_size,
             );
@@ -252,7 +327,9 @@ impl FileEncodingSupport for BmpImageParser {
 
         self.padding_size = ((self.pixel_map.width * self.pixel_size as u32) % 4) as u8;
 
-       // self.pixel_map.pixels = Vec::new(Rc::as_ptr(file_data[self.bmp_header.bf_off_bits as usize])) ;
+        self.pixel_map.pixel_map_start = self.bmp_header.bf_off_bits as u64;
+
+        self.ready = true;
     }
 
     fn embed_data(
@@ -262,23 +339,31 @@ impl FileEncodingSupport for BmpImageParser {
         encoding_method: FileEncodingMethod,
         file_encoding_function_derivation: FileEncodingFunctionDerivation,
     ) {
-        todo!()
+        if(!self.ready){
+            println!("bmp.rs: embed_data called with File Not Ready");
+            exit(1);
+        }
     }
 
     fn retrieve_data(
         &mut self,
+        data: Vec<u8>,
         encoding: FileEncoding,
         encoding_method: FileEncodingMethod,
         file_encoding_function_derivation: FileEncodingFunctionDerivation,
     ) {
-        todo!()
+        if(!self.ready){
+            println!("bmp.rs: retrieve_data called with File Not Ready");
+            exit(1);
+        }
     }
 
-    fn write_file(&mut self, file: &mut File, location: &str) {
-        todo!()
+    fn write_file(&mut self, file_location: &str) {
+        if(!self.ready){
+            println!("bmp.rs: write_file called with File Not Ready");
+            exit(1);
+        }
     }
 
-    fn validate_state(&mut self) {
-        todo!()
-    }
+
 }
