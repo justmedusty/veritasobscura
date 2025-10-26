@@ -79,34 +79,36 @@ where
 }
 
 
+pub fn embed_lsb_data<P: Pixel>(data: &Vec<u8>, pixel_map: &mut [P], width : u64, length : u64, padding : u64, pixel_size_bytes : u64){
+    let total_length = (width + padding) * length;
+
+    let bytes: &mut [u8] = unsafe {
+        std::slice::from_raw_parts_mut(
+            pixel_map.as_mut_ptr() as *mut u8,
+            total_length as usize,
+        )
+    };
+
+    for row in 0..length as usize{
+        let start = (width + padding) * row as u64;
+        let end = start + (width * pixel_size_bytes);
+        let row_start_ptr = unsafe { bytes.as_mut_ptr().add(start as usize) };
+        let row_pixels_ptr = row_start_ptr as *mut P;
+        let row_pixels: &mut [P] = unsafe {
+            std::slice::from_raw_parts_mut(row_pixels_ptr, width as usize)
+        };
+
+        for pixels in row_pixels.iter_mut(){
+
+        }
+    }
+
+
+
+
+}
 /*
     Ret val is how many bits were embedded so it is known how many more need to be embedded in the next pixel transformation
 
     under construction this is not usable at all yet
  */
-pub fn transform_function_lsb<P: Pixel>(pixel: &mut P, data: u8, bits_to_embed : u8) -> usize {
-    let bits_available = if (pixel.fourth() == 255) {
-        3
-    } else {
-        4
-    };
-
-
-    pixel.set_first(pixel.first() & (data << 0));
-    if(bits_to_embed == 1){
-        return bits_to_embed as usize;
-    }
-    pixel.set_second(data & data << 1);
-    if(bits_to_embed == 2){
-        return bits_to_embed as usize;
-    }
-    pixel.set_third(data & data << 2);
-    if(bits_to_embed == 3){
-        return bits_to_embed as usize;
-    }
-    if(bits_available == 4){
-        pixel.set_fourth(pixel.fourth() & data << 3);
-    }
-
-    bits_available
-}
