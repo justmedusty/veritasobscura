@@ -78,16 +78,25 @@ where
     transform_function(quadrant_slice);
 }
 
-
+pub fn increment_bit_and_byte_counters(bit: &mut u32, byte : &mut u32, total_bytes : u64){
+    *bit += 1;
+    if(*bit == 8){
+        *byte += 1;
+        *bit = 0;
+    }
+}
 pub fn embed_lsb_data<P: Pixel>(data: &Vec<u8>, pixel_map: &mut [P], width : u64, length : u64, padding : u64, pixel_size_bytes : u64){
     let total_length = (width + padding) * length;
 
+    let bits_to_embed = data.len() * 8;
     let bytes: &mut [u8] = unsafe {
         std::slice::from_raw_parts_mut(
             pixel_map.as_mut_ptr() as *mut u8,
             total_length as usize,
         )
     };
+    let mut current_byte : u32 = 0;
+    let mut current_bit : u32 = 0;
 
     for row in 0..length as usize{
         let start = (width + padding) * row as u64;
@@ -98,7 +107,15 @@ pub fn embed_lsb_data<P: Pixel>(data: &Vec<u8>, pixel_map: &mut [P], width : u64
             std::slice::from_raw_parts_mut(row_pixels_ptr, width as usize)
         };
 
-        for pixels in row_pixels.iter_mut(){
+        for pixel in row_pixels.iter_mut(){
+            let mut bit: u8 = data[current_byte as usize] & (1 << current_bit);
+            increment_bit_and_byte_counters(&mut current_bit, &mut current_byte, bits_to_embed as u64);
+            pixel.set_first(pixel.first() & bit);
+
+            bit = data[current_byte as usize] & (1 << current_bit);
+            increment_bit_and_byte_counters(&mut current_bit, &mut current_byte, bits_to_embed as u64);
+            pixel.set_second(pixel.second() & bit);
+
 
         }
     }
