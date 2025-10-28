@@ -115,10 +115,7 @@ pub fn embed_lsb_data<P: Pixel>(
 
         for pixel in row_pixels.iter_mut() {
             let mut bit: u8 = data[current_byte as usize] & (1 << current_bit);
-            increment_bit_and_byte_counters(
-                &mut current_bit,
-                &mut current_byte,
-            );
+            increment_bit_and_byte_counters(&mut current_bit, &mut current_byte);
             if (bit == 0) {
                 pixel.set_first(pixel.first() & !1);
             } else {
@@ -132,10 +129,7 @@ pub fn embed_lsb_data<P: Pixel>(
             }
 
             bit = data[current_byte as usize] & (1 << current_bit);
-            increment_bit_and_byte_counters(
-                &mut current_bit,
-                &mut current_byte,
-            );
+            increment_bit_and_byte_counters(&mut current_bit, &mut current_byte);
             if (bit == 0) {
                 pixel.set_second(pixel.second() & !1);
             } else {
@@ -149,10 +143,7 @@ pub fn embed_lsb_data<P: Pixel>(
             }
 
             bit = data[current_byte as usize] & (1 << current_bit);
-            increment_bit_and_byte_counters(
-                &mut current_bit,
-                &mut current_byte,
-            );
+            increment_bit_and_byte_counters(&mut current_bit, &mut current_byte);
             if (bit == 0) {
                 pixel.set_third(pixel.third() & !1);
             } else {
@@ -167,14 +158,11 @@ pub fn embed_lsb_data<P: Pixel>(
 
             if (pixel.pixel_size() == 4) {
                 bit = data[current_byte as usize] & (1 << current_bit);
-                increment_bit_and_byte_counters(
-                    &mut current_bit,
-                    &mut current_byte,
-                );
+                increment_bit_and_byte_counters(&mut current_bit, &mut current_byte);
                 if (bit == 0) {
-                    pixel.set_third(pixel.third() & !1);
+                    pixel.set_fourth(pixel.fourth() & !1);
                 } else {
-                    pixel.set_third(pixel.third() | 1);
+                    pixel.set_fourth(pixel.fourth() | 1);
                 }
             }
 
@@ -193,7 +181,7 @@ pub fn extract_lsb_data<P: Pixel>(
     length: u64,
     padding: u64,
     pixel_size_bytes: u64,
-    embedded_bits : u64
+    embedded_bits: u64,
 ) -> Vec<u8> {
     let total_length = (width + padding) * length;
 
@@ -203,7 +191,7 @@ pub fn extract_lsb_data<P: Pixel>(
     let mut current_byte: u32 = 0;
     let mut current_bit: u32 = 0;
 
-    let mut extracted_data : Vec<u8> = Vec::new();
+    let mut extracted_data: Vec<u8> = Vec::with_capacity((embedded_bits as usize / 8) + 1);
 
     for row in 0..length as usize {
         let start = (width + padding) * row as u64;
@@ -213,8 +201,53 @@ pub fn extract_lsb_data<P: Pixel>(
         let row_pixels: &mut [P] =
             unsafe { std::slice::from_raw_parts_mut(row_pixels_ptr, width as usize) };
 
+        let mut bits = 0;
+        let mut bytes: u32 = 0;
         for pixel in row_pixels.iter_mut() {
+            let mut current_bit: u8 = pixel.first() & 1;
+            if (current_bit == 0) {
+                extracted_data[bytes as usize] &= !(1 << bits);
+            } else {
+                extracted_data[bytes as usize] |= (1 << bits);
+            }
+            increment_bit_and_byte_counters(&mut bits, &mut bytes);
+            if (bits + (bytes * 8) == embedded_bits as u32) {
+                break;
+            }
 
+            current_bit = pixel.second() & 1;
+            if (current_bit == 0) {
+                extracted_data[bytes as usize] &= !(1 << bits);
+            } else {
+                extracted_data[bytes as usize] |= (1 << bits);
+            }
+            increment_bit_and_byte_counters(&mut bits, &mut bytes);
+            if (bits + (bytes * 8) == embedded_bits as u32) {
+                break;
+            }
+            current_bit = pixel.third() & 1;
+            if (current_bit == 0) {
+                extracted_data[bytes as usize] &= !(1 << bits);
+            } else {
+                extracted_data[bytes as usize] |= (1 << bits);
+            }
+            increment_bit_and_byte_counters(&mut bits, &mut bytes);
+            if (bits + (bytes * 8) == embedded_bits as u32) {
+                break;
+            }
+
+            if (pixel.pixel_size() == 4) {
+                current_bit = pixel.fourth() & 1;
+                if (current_bit == 0) {
+                    extracted_data[bytes as usize] &= !(1 << bits);
+                } else {
+                    extracted_data[bytes as usize] |= (1 << bits);
+                }
+                increment_bit_and_byte_counters(&mut bits, &mut bytes);
+                if (bits + (bytes * 8) == embedded_bits as u32) {
+                    break;
+                }
+            }
         }
     }
 
