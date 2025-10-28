@@ -15,6 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
+use std::ops::Sub;
 
 pub trait Pixel {
     fn red(&self) -> u8;
@@ -22,20 +23,18 @@ pub trait Pixel {
     fn blue(&self) -> u8;
 
     /*
-    This should just return 255 if this particular pixel does not support alpha
- */
+       This should just return 255 if this particular pixel does not support alpha
+    */
     fn alpha(&self) -> u8;
 
-
     /*
-        These will be for embedding just the first , second etc color value irrespective of which order the colors are
-     */
+       These will be for embedding just the first , second etc color value irrespective of which order the colors are
+    */
     fn first(&self) -> u8;
     fn second(&self) -> u8;
     fn third(&self) -> u8;
 
     fn fourth(&self) -> u8; // This one should just return 255 if not in use
-
 
     fn set_red(&mut self, value: u8);
     fn set_green(&mut self, value: u8);
@@ -48,8 +47,8 @@ pub trait Pixel {
     // This should do nothing or exit / panic on invocation from a 3 byte pixel
     fn set_fourth(&mut self, value: u8);
     /*
-      This should do nothing on a 3 byte pixel impl
-   */
+       This should do nothing on a 3 byte pixel impl
+    */
     fn set_alpha(&mut self, value: u8);
 
     fn pixel_size(&self) -> usize;
@@ -65,8 +64,12 @@ where
     }
 }
 
-pub fn transform_pixel_quadrants<P, F>(pixel_map: &mut Vec<P>, transform_function: F, coordinates: (u64, u64), quadrant_size: u64)
-where
+pub fn transform_pixel_quadrants<P, F>(
+    pixel_map: &mut Vec<P>,
+    transform_function: F,
+    coordinates: (u64, u64),
+    quadrant_size: u64,
+) where
     P: Pixel + Sized,
     F: Fn(&mut [P]),
 {
@@ -78,54 +81,147 @@ where
     transform_function(quadrant_slice);
 }
 
-pub fn increment_bit_and_byte_counters(bit: &mut u32, byte : &mut u32, total_bytes : u64){
+pub fn increment_bit_and_byte_counters(bit: &mut u32, byte: &mut u32) {
     *bit += 1;
-    if(*bit == 8){
+    if (*bit == 8) {
         *byte += 1;
         *bit = 0;
     }
 }
-pub fn embed_lsb_data<P: Pixel>(data: &Vec<u8>, pixel_map: &mut [P], width : u64, length : u64, padding : u64, pixel_size_bytes : u64){
+pub fn embed_lsb_data<P: Pixel>(
+    data: &Vec<u8>,
+    pixel_map: &mut [P],
+    width: u64,
+    length: u64,
+    padding: u64,
+    pixel_size_bytes: u64,
+) {
     let total_length = (width + padding) * length;
 
-    let bits_to_embed = data.len() * 8;
+    let mut bits_to_embed = data.len() * 8;
     let bytes: &mut [u8] = unsafe {
-        std::slice::from_raw_parts_mut(
-            pixel_map.as_mut_ptr() as *mut u8,
-            total_length as usize,
-        )
+        std::slice::from_raw_parts_mut(pixel_map.as_mut_ptr() as *mut u8, total_length as usize)
     };
-    let mut current_byte : u32 = 0;
-    let mut current_bit : u32 = 0;
+    let mut current_byte: u32 = 0;
+    let mut current_bit: u32 = 0;
 
-    for row in 0..length as usize{
+    for row in 0..length as usize {
         let start = (width + padding) * row as u64;
         let end = start + (width * pixel_size_bytes);
         let row_start_ptr = unsafe { bytes.as_mut_ptr().add(start as usize) };
         let row_pixels_ptr = row_start_ptr as *mut P;
-        let row_pixels: &mut [P] = unsafe {
-            std::slice::from_raw_parts_mut(row_pixels_ptr, width as usize)
-        };
+        let row_pixels: &mut [P] =
+            unsafe { std::slice::from_raw_parts_mut(row_pixels_ptr, width as usize) };
 
-        for pixel in row_pixels.iter_mut(){
+        for pixel in row_pixels.iter_mut() {
             let mut bit: u8 = data[current_byte as usize] & (1 << current_bit);
-            increment_bit_and_byte_counters(&mut current_bit, &mut current_byte, bits_to_embed as u64);
-            pixel.set_first(pixel.first() & bit);
+            increment_bit_and_byte_counters(
+                &mut current_bit,
+                &mut current_byte,
+            );
+            if (bit == 0) {
+                pixel.set_first(pixel.first() & !1);
+            } else {
+                pixel.set_first(pixel.first() | 1);
+            }
+
+            bits_to_embed = bits_to_embed.sub(1);
+
+            if (bits_to_embed == 0) {
+                return;
+            }
 
             bit = data[current_byte as usize] & (1 << current_bit);
-            increment_bit_and_byte_counters(&mut current_bit, &mut current_byte, bits_to_embed as u64);
-            pixel.set_second(pixel.second() & bit);
+            increment_bit_and_byte_counters(
+                &mut current_bit,
+                &mut current_byte,
+            );
+            if (bit == 0) {
+                pixel.set_second(pixel.second() & !1);
+            } else {
+                pixel.set_second(pixel.second() | 1);
+            }
 
+            bits_to_embed = bits_to_embed.sub(1);
+
+            if (bits_to_embed == 0) {
+                return;
+            }
+
+            bit = data[current_byte as usize] & (1 << current_bit);
+            increment_bit_and_byte_counters(
+                &mut current_bit,
+                &mut current_byte,
+            );
+            if (bit == 0) {
+                pixel.set_third(pixel.third() & !1);
+            } else {
+                pixel.set_third(pixel.third() | 1);
+            }
+
+            bits_to_embed = bits_to_embed.sub(1);
+
+            if (bits_to_embed == 0) {
+                return;
+            }
+
+            if (pixel.pixel_size() == 4) {
+                bit = data[current_byte as usize] & (1 << current_bit);
+                increment_bit_and_byte_counters(
+                    &mut current_bit,
+                    &mut current_byte,
+                );
+                if (bit == 0) {
+                    pixel.set_third(pixel.third() & !1);
+                } else {
+                    pixel.set_third(pixel.third() | 1);
+                }
+            }
+
+            bits_to_embed = bits_to_embed.sub(1);
+
+            if (bits_to_embed == 0) {
+                return;
+            }
+        }
+    }
+}
+
+pub fn extract_lsb_data<P: Pixel>(
+    pixel_map: &mut [P],
+    width: u64,
+    length: u64,
+    padding: u64,
+    pixel_size_bytes: u64,
+    embedded_bits : u64
+) -> Vec<u8> {
+    let total_length = (width + padding) * length;
+
+    let bytes: &mut [u8] = unsafe {
+        std::slice::from_raw_parts_mut(pixel_map.as_mut_ptr() as *mut u8, total_length as usize)
+    };
+    let mut current_byte: u32 = 0;
+    let mut current_bit: u32 = 0;
+
+    let mut extracted_data : Vec<u8> = Vec::new();
+
+    for row in 0..length as usize {
+        let start = (width + padding) * row as u64;
+        let end = start + (width * pixel_size_bytes);
+        let row_start_ptr = unsafe { bytes.as_mut_ptr().add(start as usize) };
+        let row_pixels_ptr = row_start_ptr as *mut P;
+        let row_pixels: &mut [P] =
+            unsafe { std::slice::from_raw_parts_mut(row_pixels_ptr, width as usize) };
+
+        for pixel in row_pixels.iter_mut() {
 
         }
     }
 
-
-
-
+    extracted_data
 }
 /*
-    Ret val is how many bits were embedded so it is known how many more need to be embedded in the next pixel transformation
+   Ret val is how many bits were embedded so it is known how many more need to be embedded in the next pixel transformation
 
-    under construction this is not usable at all yet
- */
+   under construction this is not usa ble at all yet
+*/
