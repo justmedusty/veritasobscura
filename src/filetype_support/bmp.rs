@@ -23,7 +23,7 @@ use crate::file_encoding_support::file_encoding_support::{
 use crate::file_encoding_support::pixel::Pixel;
 use crate::filetype_support::bmp::BmpPixelType::{Rgb, Rgba};
 use std::fs::File;
-use std::io::{Read, Seek};
+use std::io::{Read, Seek, Write};
 use std::process::exit;
 use std::rc::Rc;
 use std::{io, mem};
@@ -250,6 +250,49 @@ pub enum BmpPixelType {
 }
 
 impl FileEncodingSupport for BmpImageParser {
+    fn new(filename : &str) -> Self {
+        BmpImageParser{
+            bmp_header: BitmapFileHeader {
+                bf_type: 0,
+                bf_size: 0,
+                bf_reserved1: 0,
+                bf_reserved2: 0,
+                bf_off_bits: 0,
+            },
+            bmp_dib_header: BitmapDIBHeader {
+                bi_size: 0,
+                bi_width: 0,
+                bi_height: 0,
+                bi_planes: 0,
+                bi_bit_count: 0,
+                bi_compression: 0,
+                bi_size_image: 0,
+                bi_x_pels_per_meter: 0,
+                bi_y_pels_per_meter: 0,
+                bi_clr_used: 0,
+                bi_clr_important: 0,
+            },
+            pixel_size: 0,
+            padding_size: 0,
+            pixel_map: BmpBitmap {
+                width: 0,
+                height: 0,
+                pixel_map_start: 0,
+            },
+            image_file: match File::open(filename) {
+                Ok(file) => {
+                    file
+                }
+                Err(e) => {
+                    println!("bmp.rs: new : failed to open file {}: {}",filename, e);
+                    exit(1);
+                }
+            },
+            file_data: Box::new(vec![]),
+            ready: false,
+        }
+    }
+
     fn parse_file(&mut self, file_location: &str) {
         let header_size = std::mem::size_of::<BitmapFileHeader>();
         let dib_header_size = std::mem::size_of::<BitmapDIBHeader>();
@@ -343,6 +386,9 @@ impl FileEncodingSupport for BmpImageParser {
             println!("bmp.rs: embed_data called with File Not Ready");
             exit(1);
         }
+        match encoding_method {
+            _ => todo!(),
+        }
     }
 
     fn retrieve_data(
@@ -363,6 +409,25 @@ impl FileEncodingSupport for BmpImageParser {
             println!("bmp.rs: write_file called with File Not Ready");
             exit(1);
         }
+
+        match File::create(file_location.to_string()) {
+            Ok(_) => {}
+            Err(e) => {
+                println!("bmp.rs: write_file Error opening file {} {}", file_location,e);
+                exit(1);
+            }
+        }
+        let mut file = File::open(file_location.to_string()).expect("bmp.rs: Error opening file");
+
+        match file.write_all(self.file_data.as_slice()) {
+            Ok(_) => {
+            }
+            Err(e) => {
+                println!("bmp.rs: write_file called with File Not Ready");
+                exit(1);
+            }
+        }
+
     }
 
 

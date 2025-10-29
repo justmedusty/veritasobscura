@@ -59,6 +59,7 @@ pub enum FileEncodingFunctionDerivation {
 }
 
 pub trait FileEncodingSupport {
+    fn new(filename : &str) -> Self;
 
     fn parse_file(&mut self, file_location: &str);
 
