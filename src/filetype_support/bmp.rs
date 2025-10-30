@@ -31,7 +31,7 @@ use std::{io, mem};
 const BMP_MAGIC: u16 = 0x4D42;
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
-struct BitmapFileHeader {
+pub struct BitmapFileHeader {
     pub bf_type: u16,      // File type always BM (0x4D42)
     pub bf_size: u32,      // Size of the file (in bytes)
     pub bf_reserved1: u16, // Reserved - must be 0
@@ -41,7 +41,7 @@ struct BitmapFileHeader {
 
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
-struct BitmapDIBHeader {
+pub struct BitmapDIBHeader {
     pub bi_size: u32,             // Size of this header (40 bytes, for BITMAPINFOHEADER)
     pub bi_width: i32,            // Width of bitmap in pixels
     pub bi_height: i32, // Height of bitmap in pixels. If positive, bottom-up. If negative, top-down.
@@ -64,7 +64,7 @@ struct BitmapDIBHeader {
 */
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
-struct BitmapColorTable {
+pub struct BitmapColorTable {
     pub blue: u8,     // Blue component (0-255)
     pub green: u8,    // Green component (0-255)
     pub red: u8,      // Red component (0-255)
@@ -74,7 +74,7 @@ struct BitmapColorTable {
 // For a 24-bit BMP, a pixel is usually 3 bytes: B, G, R.
 #[repr(C, packed)]
 #[derive(Debug, Default, Clone)]
-struct RgbPixel {
+pub struct RgbPixel {
     pub blue: u8,
     pub green: u8,
     pub red: u8,
@@ -83,28 +83,27 @@ struct RgbPixel {
 // For a 32-bit BMP, a pixel is 4 bytes: B, G, R, A (or reserved)
 #[repr(C, packed)]
 #[derive(Debug, Default, Clone)]
-struct RgbaPixel {
+pub struct RgbaPixel {
     pub blue: u8,
     pub green: u8,
     pub red: u8,
     pub alpha: u8, // Can be actual alpha or just padding (usually 0 or 255)
 }
 
-#[repr(C, packed)]
-struct BmpBitmap {
+pub struct BmpBitmap {
     pub width: u32,
     pub height: u32,
     pub pixel_map_start: u64, // File offset where pixel map begins, will be indexed via file_data
 }
 
 pub struct BmpImageParser {
-    bmp_header: BitmapFileHeader,
-    bmp_dib_header: BitmapDIBHeader,
-    pixel_size: u8,
-    padding_size: u8,
-    pixel_map: BmpBitmap,
-    image_file: File,
-    file_data: Box<Vec<u8>>,
+    pub bmp_header: BitmapFileHeader,
+    pub bmp_dib_header: BitmapDIBHeader,
+    pub pixel_size: u8,
+    pub padding_size: u8,
+    pub pixel_map: BmpBitmap,
+    pub image_file: File,
+    pub file_data: Box<Vec<u8>>,
     ready: bool
 }
 
