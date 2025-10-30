@@ -15,18 +15,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
-use crate::file_encoding_support::file_encoding_support;
 use crate::file_encoding_support::file_encoding_support::{
     FileEncoding, FileEncodingFunctionDerivation, FileEncodingMethod, FileEncodingSupport,
-    Operation,
 };
 use crate::file_encoding_support::pixel::Pixel;
-use crate::filetype_support::bmp::BmpPixelType::{Rgb, Rgba};
 use std::fs::File;
-use std::io::{Read, Seek, Write};
+use std::io::{Read, Write};
 use std::process::exit;
-use std::rc::Rc;
-use std::{io, mem};
+use std::mem;
 
 const BMP_MAGIC: u16 = 0x4D42;
 #[repr(C, packed)]
@@ -381,7 +377,7 @@ impl FileEncodingSupport for BmpImageParser {
         encoding_method: FileEncodingMethod,
         file_encoding_function_derivation: FileEncodingFunctionDerivation,
     ) {
-        if(!self.ready){
+        if !self.ready {
             println!("bmp.rs: embed_data called with File Not Ready");
             exit(1);
         }
@@ -397,14 +393,14 @@ impl FileEncodingSupport for BmpImageParser {
         encoding_method: FileEncodingMethod,
         file_encoding_function_derivation: FileEncodingFunctionDerivation,
     ) {
-        if(!self.ready){
+        if !self.ready {
             println!("bmp.rs: retrieve_data called with File Not Ready");
             exit(1);
         }
     }
 
     fn write_file(&mut self, file_location: &str) {
-        if(!self.ready){
+        if !self.ready {
             println!("bmp.rs: write_file called with File Not Ready");
             exit(1);
         }

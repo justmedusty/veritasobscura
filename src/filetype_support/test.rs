@@ -16,9 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 
-use crate::file_encoding_support::file_encoding_support;
-use crate::file_encoding_support::pixel;
-use crate::filetype_support::bmp;
 #[cfg(test)]
 mod svg_tests{
 

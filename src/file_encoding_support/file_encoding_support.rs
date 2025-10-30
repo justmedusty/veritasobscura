@@ -17,9 +17,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 
 use std::fs::File;
-use std::io::Error;
-use std::rc::Rc;
-use crate::file_encoding_support::pixel::Pixel;
 
 pub struct ImageSupport<T: FileEncodingSupport + FileEncodingAlgorithms> {
     image_file: File,
