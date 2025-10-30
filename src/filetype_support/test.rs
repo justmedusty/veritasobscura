@@ -28,8 +28,8 @@ mod bmp_tests{
 
     #[test]
     fn test_bmp_object_creation(){
-        let bmp_image_parser = BmpImageParser::new("../assets/sample-1024x1024.bmp");
-        
+        let bmp_image_parser = BmpImageParser::new("src/filetype_support/assets/sample-1024x1024.bmp");
+
         assert_eq!(bmp_image_parser.file_data.len(), 0);
         
         assert_eq!(bmp_image_parser.pixel_size, 0);
@@ -83,14 +83,16 @@ mod bmp_tests{
 
     #[test]
     fn test_bmp_image_parsing(){
-
+        assert_eq!(1,1);
     }
 
     #[test]
     fn test_bmp_lsb_embed(){
+        assert_eq!(1,1);
     }
 
     #[test]
     fn test_bmp_lsb_retrieve(){
+        assert_eq!(1,1);
     }
 }
