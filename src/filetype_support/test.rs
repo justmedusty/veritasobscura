@@ -83,7 +83,51 @@ mod bmp_tests{
 
     #[test]
     fn test_bmp_image_parsing(){
-        assert_eq!(1,1);
+        let mut bmp_image_parser = BmpImageParser::new("src/filetype_support/assets/sample-1024x1024.bmp");
+
+        bmp_image_parser.parse_file();
+       assert_ne!(bmp_image_parser.file_data.len(), 0);
+
+        assert_ne!(bmp_image_parser.pixel_size, 0);
+
+        assert_ne!(bmp_image_parser.pixel_map.width, 0);
+        assert_ne!(bmp_image_parser.pixel_map.height, 0);
+        assert_ne!(bmp_image_parser.pixel_map.pixel_map_start, 0);
+
+        // To avoid unaligned access, we assign the packed header fields to local variables first
+        let bf_type = bmp_image_parser.bmp_header.bf_type;
+        let bf_size = bmp_image_parser.bmp_header.bf_size;
+        let bf_reserved1 = bmp_image_parser.bmp_header.bf_reserved1;
+        let bf_reserved2 = bmp_image_parser.bmp_header.bf_reserved2;
+        let bf_off_bits = bmp_image_parser.bmp_header.bf_off_bits;
+
+        // Check the bmp_header fields via local variables
+        assert_ne!(bf_type, 0);
+        assert_ne!(bf_size, 0);
+        assert_ne!(bf_off_bits, 0);
+
+        let bi_size = bmp_image_parser.bmp_dib_header.bi_size;
+        let bi_width = bmp_image_parser.bmp_dib_header.bi_width;
+        let bi_height = bmp_image_parser.bmp_dib_header.bi_height;
+        let bi_planes = bmp_image_parser.bmp_dib_header.bi_planes;
+        let bi_bit_count = bmp_image_parser.bmp_dib_header.bi_bit_count;
+        let bi_compression = bmp_image_parser.bmp_dib_header.bi_compression;
+        let bi_size_image = bmp_image_parser.bmp_dib_header.bi_size_image;
+        let bi_x_pels_per_meter = bmp_image_parser.bmp_dib_header.bi_x_pels_per_meter;
+        let bi_y_pels_per_meter = bmp_image_parser.bmp_dib_header.bi_y_pels_per_meter;
+        let bi_clr_used = bmp_image_parser.bmp_dib_header.bi_clr_used;
+        let bi_clr_important = bmp_image_parser.bmp_dib_header.bi_clr_important;
+
+        assert_ne!(bi_size, 0);
+        assert_ne!(bi_width, 0);
+        assert_ne!(bi_height, 0);
+        assert_ne!(bi_planes, 0);
+        assert_ne!(bi_bit_count, 0);
+        assert_ne!(bi_size_image, 0);
+        assert_ne!(bi_x_pels_per_meter, 0);
+        assert_ne!(bi_y_pels_per_meter, 0);
+
+        assert_eq!(bmp_image_parser.padding_size, 0);
     }
 
     #[test]

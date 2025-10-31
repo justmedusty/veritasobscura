@@ -288,27 +288,17 @@ impl FileEncodingSupport for BmpImageParser {
         }
     }
 
-    fn parse_file(&mut self, file_location: &str) {
+    fn parse_file(&mut self) {
         let header_size = std::mem::size_of::<BitmapFileHeader>();
         let dib_header_size = std::mem::size_of::<BitmapDIBHeader>();
 
-        let mut file: File = match File::open(file_location) {
-            Ok(file) => file,
-            Err(e) => {
-                println!(
-                    "bmp.rs: parse_file: Failed to open file {} , exiting ...",
-                    file_location
-                );
-                exit(1);
-            }
-        };
+        let file: &mut File = &mut self.image_file;
 
         let file_size: u32 = match file.metadata() {
             Ok(metadata) => metadata.len() as u32,
             Err(_) => {
                 println!(
-                    "bmp.rs : parse_file: Error opening file {} metadata! Exiting...",
-                    file_location
+                    "bmp.rs : parse_file: Error reading file metadata! Exiting...",
                 );
                 exit(1);
             }
@@ -320,8 +310,7 @@ impl FileEncodingSupport for BmpImageParser {
             Ok(_) => (),
             Err(e) => {
                 println!(
-                    "bmp.rs: parse_file: Error reading file {} to end with err {}",
-                    file_location, e
+                    "bmp.rs: parse_file: Error reading file to end with err {}", e
                 );
                 exit(1);
             }
@@ -332,7 +321,7 @@ impl FileEncodingSupport for BmpImageParser {
         unsafe {
             let header_pointer: *mut BitmapFileHeader = &mut self.bmp_header;
             std::ptr::copy(
-                self.file_data[0] as *mut u8,
+                &mut self.file_data[0] as *mut u8,
                 header_pointer as *mut u8,
                 header_size,
             );
@@ -342,7 +331,7 @@ impl FileEncodingSupport for BmpImageParser {
         unsafe {
             let dib_header_pointer: *mut BitmapDIBHeader = &mut self.bmp_dib_header;
             std::ptr::copy(
-                self.file_data[14] as *mut u8,
+                &mut self.file_data[14] as *mut u8,
                 dib_header_pointer as *mut u8,
                 dib_header_size,
             );

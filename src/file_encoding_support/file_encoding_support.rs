@@ -58,13 +58,13 @@ pub enum FileEncodingFunctionDerivation {
 pub trait FileEncodingSupport {
     fn new(filename : &str) -> Self;
 
-    fn parse_file(&mut self, file_location: &str);
+    fn parse_file(&mut self);
 
     fn embed_data(&mut self, data: &mut Vec<u8>, encoding: FileEncoding, encoding_method: FileEncodingMethod, file_encoding_function_derivation: FileEncodingFunctionDerivation);
 
     fn retrieve_data(&mut self,data: Vec<u8>,encoding: FileEncoding, encoding_method: FileEncodingMethod, file_encoding_function_derivation: FileEncodingFunctionDerivation);
 
-    fn write_file(&mut self, file_location: &str);
+    fn write_file(&mut self, new_file_location: &str);
     
 }
 
