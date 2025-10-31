@@ -90,7 +90,7 @@ pub fn increment_bit_and_byte_counters(bit: &mut u32, byte: &mut u32) {
 }
 pub fn embed_lsb_data<P: Pixel>(
     data: &Vec<u8>,
-    pixel_map: &mut [P],
+    pixel_map: &mut [u8],
     width: u64,
     length: u64,
     padding: u64,
@@ -99,16 +99,14 @@ pub fn embed_lsb_data<P: Pixel>(
     let total_length = (width + padding) * length;
 
     let mut bits_to_embed = data.len() * 8;
-    let bytes: &mut [u8] = unsafe {
-        std::slice::from_raw_parts_mut(pixel_map.as_mut_ptr() as *mut u8, total_length as usize)
-    };
+ 
     let mut current_byte: u32 = 0;
     let mut current_bit: u32 = 0;
 
     for row in 0..length as usize {
         let start = (width + padding) * row as u64;
         let end = start + (width * pixel_size_bytes);
-        let row_start_ptr = unsafe { bytes.as_mut_ptr().add(start as usize) };
+        let row_start_ptr = unsafe { pixel_map.as_mut_ptr().add(start as usize) };
         let row_pixels_ptr = row_start_ptr as *mut P;
         let row_pixels: &mut [P] =
             unsafe { std::slice::from_raw_parts_mut(row_pixels_ptr, width as usize) };
@@ -176,7 +174,7 @@ pub fn embed_lsb_data<P: Pixel>(
 }
 
 pub fn extract_lsb_data<P: Pixel>(
-    pixel_map: &mut [P],
+    pixel_map: &mut [u8],
     width: u64,
     length: u64,
     padding: u64,
@@ -184,10 +182,7 @@ pub fn extract_lsb_data<P: Pixel>(
     embedded_bits: u64,
 ) -> Vec<u8> {
     let total_length = (width + padding) * length;
-
-    let bytes: &mut [u8] = unsafe {
-        std::slice::from_raw_parts_mut(pixel_map.as_mut_ptr() as *mut u8, total_length as usize)
-    };
+    
     let current_byte: u32 = 0;
     let current_bit: u32 = 0;
 
@@ -196,7 +191,7 @@ pub fn extract_lsb_data<P: Pixel>(
     for row in 0..length as usize {
         let start = (width + padding) * row as u64;
         let end = start + (width * pixel_size_bytes);
-        let row_start_ptr = unsafe { bytes.as_mut_ptr().add(start as usize) };
+        let row_start_ptr = unsafe { pixel_map.as_mut_ptr().add(start as usize) };
         let row_pixels_ptr = row_start_ptr as *mut P;
         let row_pixels: &mut [P] =
             unsafe { std::slice::from_raw_parts_mut(row_pixels_ptr, width as usize) };

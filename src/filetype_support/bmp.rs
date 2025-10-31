@@ -18,11 +18,11 @@
 use crate::file_encoding_support::file_encoding_support::{
     FileEncoding, FileEncodingFunctionDerivation, FileEncodingMethod, FileEncodingSupport,
 };
-use crate::file_encoding_support::pixel::Pixel;
+use crate::file_encoding_support::pixel::{embed_lsb_data, extract_lsb_data, Pixel};
 use std::fs::File;
 use std::io::{Read, Write};
-use std::process::exit;
 use std::mem;
+use std::process::exit;
 
 const BMP_MAGIC: u16 = 0x4D42;
 #[repr(C, packed)]
@@ -87,6 +87,7 @@ pub struct RgbaPixel {
 }
 
 pub struct BmpBitmap {
+    pub num_embedded_bits : Option<usize>,
     pub width: u32,
     pub height: u32,
     pub pixel_map_start: u64, // File offset where pixel map begins, will be indexed via file_data
@@ -100,7 +101,7 @@ pub struct BmpImageParser {
     pub pixel_map: BmpBitmap,
     pub image_file: File,
     pub file_data: Box<Vec<u8>>,
-    ready: bool
+    ready: bool,
 }
 
 // For RGB pixel type
@@ -116,7 +117,7 @@ impl Pixel for RgbPixel {
     }
     fn alpha(&self) -> u8 {
         255
-    }// No alpha in RGB, so always 255
+    } // No alpha in RGB, so always 255
 
     fn first(&self) -> u8 {
         self.blue
@@ -245,8 +246,8 @@ pub enum BmpPixelType {
 }
 
 impl FileEncodingSupport for BmpImageParser {
-    fn new(filename : &str) -> Self {
-        BmpImageParser{
+    fn new(filename: &str) -> Self {
+        BmpImageParser {
             bmp_header: BitmapFileHeader {
                 bf_type: 0,
                 bf_size: 0,
@@ -270,16 +271,15 @@ impl FileEncodingSupport for BmpImageParser {
             pixel_size: 0,
             padding_size: 0,
             pixel_map: BmpBitmap {
+                num_embedded_bits: None,
                 width: 0,
                 height: 0,
                 pixel_map_start: 0,
             },
             image_file: match File::open(filename) {
-                Ok(file) => {
-                    file
-                }
+                Ok(file) => file,
                 Err(e) => {
-                    println!("bmp.rs: new : failed to open file {}: {}",filename, e);
+                    println!("bmp.rs: new : failed to open file {}: {}", filename, e);
                     exit(1);
                 }
             },
@@ -297,9 +297,7 @@ impl FileEncodingSupport for BmpImageParser {
         let file_size: u32 = match file.metadata() {
             Ok(metadata) => metadata.len() as u32,
             Err(_) => {
-                println!(
-                    "bmp.rs : parse_file: Error reading file metadata! Exiting...",
-                );
+                println!("bmp.rs : parse_file: Error reading file metadata! Exiting...",);
                 exit(1);
             }
         };
@@ -310,7 +308,8 @@ impl FileEncodingSupport for BmpImageParser {
             Ok(_) => (),
             Err(e) => {
                 println!(
-                    "bmp.rs: parse_file: Error reading file to end with err {}", e
+                    "bmp.rs: parse_file: Error reading file to end with err {}",
+                    e
                 );
                 exit(1);
             }
@@ -371,6 +370,18 @@ impl FileEncodingSupport for BmpImageParser {
             exit(1);
         }
         match encoding_method {
+            FileEncodingMethod::LeftToRight => match encoding {
+                FileEncoding::Lsb => {
+                    if(self.pixel_size == 3){
+                        embed_lsb_data::<RgbPixel>(&data, &mut self.file_data[self.pixel_map.pixel_map_start as usize..], self.pixel_map.width as u64, self.pixel_map.height as u64, self.padding_size as u64, 3)
+                    }else {
+                        embed_lsb_data::<RgbaPixel>(&data, &mut self.file_data[self.pixel_map.pixel_map_start as usize..], self.pixel_map.width as u64, self.pixel_map.height as u64, self.padding_size as u64, 4)
+                    }
+                }
+
+                _ => todo!(),
+            },
+
             _ => todo!(),
         }
     }
@@ -386,6 +397,23 @@ impl FileEncodingSupport for BmpImageParser {
             println!("bmp.rs: retrieve_data called with File Not Ready");
             exit(1);
         }
+
+        match encoding_method {
+            FileEncodingMethod::LeftToRight => match encoding {
+                FileEncoding::Lsb => {
+                    if(self.pixel_size == 3){
+                        let data_vec : Vec<u8> = extract_lsb_data::<RgbPixel>(&mut self.file_data[self.pixel_map.pixel_map_start as usize..], self.pixel_map.width as u64, self.pixel_map.height as u64, self.padding_size as u64, 3, self.pixel_map.num_embedded_bits.unwrap() as u64);
+                    }else {
+                        let data_vec : Vec<u8> = extract_lsb_data::<RgbaPixel>( &mut self.file_data[self.pixel_map.pixel_map_start as usize..], self.pixel_map.width as u64, self.pixel_map.height as u64, self.padding_size as u64, 4,self.pixel_map.num_embedded_bits.unwrap() as u64);
+
+                    }
+                }
+
+                _ => todo!(),
+            },
+
+            _ => todo!(),
+        }
     }
 
     fn write_file(&mut self, file_location: &str) {
@@ -397,22 +425,21 @@ impl FileEncodingSupport for BmpImageParser {
         match File::create(file_location.to_string()) {
             Ok(_) => {}
             Err(e) => {
-                println!("bmp.rs: write_file Error opening file {} {}", file_location,e);
+                println!(
+                    "bmp.rs: write_file Error opening file {} {}",
+                    file_location, e
+                );
                 exit(1);
             }
         }
         let mut file = File::open(file_location.to_string()).expect("bmp.rs: Error opening file");
 
         match file.write_all(self.file_data.as_slice()) {
-            Ok(_) => {
-            }
+            Ok(_) => {}
             Err(e) => {
                 println!("bmp.rs: write_file called with File Not Ready");
                 exit(1);
             }
         }
-
     }
-
-
 }

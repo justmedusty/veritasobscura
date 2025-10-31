@@ -104,7 +104,7 @@ mod bmp_tests{
         // Check the bmp_header fields via local variables
         assert_ne!(bf_type, 0);
         assert_ne!(bf_size, 0);
-        assert_ne!(bf_off_bits, 0);
+        assert_eq!(bf_off_bits, 54);
 
         let bi_size = bmp_image_parser.bmp_dib_header.bi_size;
         let bi_width = bmp_image_parser.bmp_dib_header.bi_width;
@@ -119,10 +119,10 @@ mod bmp_tests{
         let bi_clr_important = bmp_image_parser.bmp_dib_header.bi_clr_important;
 
         assert_ne!(bi_size, 0);
-        assert_ne!(bi_width, 0);
-        assert_ne!(bi_height, 0);
+        assert_eq!(bi_width, 1024);
+        assert_eq!(bi_height, 1024);
         assert_ne!(bi_planes, 0);
-        assert_ne!(bi_bit_count, 0);
+        assert_eq!(bi_bit_count, 24);
         assert_ne!(bi_size_image, 0);
         assert_ne!(bi_x_pels_per_meter, 0);
         assert_ne!(bi_y_pels_per_meter, 0);
