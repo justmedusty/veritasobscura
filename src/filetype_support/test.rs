@@ -23,8 +23,10 @@ mod svg_tests{
 
 #[cfg(test)]
 mod bmp_tests{
+    use std::process::exit;
     use crate::file_encoding_support::file_encoding_support::FileEncodingSupport;
-    use crate::filetype_support::bmp::BmpImageParser;
+    use crate::file_encoding_support::pixel::embed_lsb_data;
+    use crate::filetype_support::bmp::{BmpImageParser, RgbPixel, RgbaPixel};
 
     #[test]
     fn test_bmp_object_creation(){
@@ -132,7 +134,26 @@ mod bmp_tests{
 
     #[test]
     fn test_bmp_lsb_embed(){
-        assert_eq!(1,1);
+        let mut bmp_image_parser = BmpImageParser::new("src/filetype_support/assets/sample-1024x1024.bmp");
+        bmp_image_parser.parse_file();
+
+        let data_vec : Vec<u8> = "This is a test embedding for testing purposes".to_string().into_bytes();
+        match bmp_image_parser.pixel_size {
+            3 => {
+                embed_lsb_data::<RgbPixel>(&data_vec, &mut bmp_image_parser.file_data[bmp_image_parser.pixel_map.pixel_map_start as usize..], bmp_image_parser.pixel_map.width as u64, bmp_image_parser.pixel_map.height as u64, bmp_image_parser.padding_size as u64, bmp_image_parser.pixel_size as u64);
+            }
+
+            4 => {
+                embed_lsb_data::<RgbaPixel>(&data_vec, &mut bmp_image_parser.file_data[bmp_image_parser.pixel_map.pixel_map_start as usize..], bmp_image_parser.pixel_map.width as u64, bmp_image_parser.pixel_map.height as u64, bmp_image_parser.padding_size as u64, bmp_image_parser.pixel_size as u64);
+            }
+            _ => {
+                println!("bmp test.rs Got bad value for pixel size, exiting ...");
+                exit(1);
+            }
+        }
+
+        bmp_image_parser.write_file("src/filetype_support/assets/sample-1024x1024-TEST_EMBED.bmp");
+
     }
 
     #[test]
