@@ -186,7 +186,7 @@ pub fn extract_lsb_data<P: Pixel>(
     let current_byte: u32 = 0;
     let current_bit: u32 = 0;
 
-    let mut extracted_data: Vec<u8> = Vec::with_capacity((embedded_bits as usize / 8) + 1);
+    let mut extracted_data: Vec<u8> = vec![0u8; (embedded_bits as usize / 8 + 1) as usize];
 
     for row in 0..length as usize {
         let start = (width + padding) * row as u64;
