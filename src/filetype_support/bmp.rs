@@ -432,7 +432,7 @@ impl FileEncodingSupport for BmpImageParser {
                 exit(1);
             }
         }
-        let mut file = File::open(file_location.to_string()).expect("bmp.rs: write_file:  Error opening file");
+        let mut file = File::create(file_location.to_string()).expect("bmp.rs: write_file:  Error opening file");
 
         match file.write_all(self.file_data.as_slice()) {
             Ok(_) => {}
