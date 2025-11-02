@@ -25,7 +25,7 @@ mod svg_tests{
 mod bmp_tests{
     use std::process::exit;
     use crate::file_encoding_support::file_encoding_support::FileEncodingSupport;
-    use crate::file_encoding_support::pixel::embed_lsb_data;
+    use crate::file_encoding_support::pixel::{embed_lsb_data, extract_lsb_data};
     use crate::filetype_support::bmp::{BmpImageParser, RgbPixel, RgbaPixel};
 
     #[test]
@@ -158,6 +158,25 @@ mod bmp_tests{
 
     #[test]
     fn test_bmp_lsb_retrieve(){
-        assert_eq!(1,1);
+        let mut bmp_image_parser = BmpImageParser::new("src/filetype_support/assets/sample-1024x1024-TEST_EMBED.bmp");
+        bmp_image_parser.parse_file();
+
+        let mut data_vec: Vec<u8> = vec![0];
+        match bmp_image_parser.pixel_size {
+            3 => {
+               data_vec = extract_lsb_data::<RgbPixel>( &mut bmp_image_parser.file_data[bmp_image_parser.pixel_map.pixel_map_start as usize..], bmp_image_parser.pixel_map.width as u64, bmp_image_parser.pixel_map.height as u64, bmp_image_parser.padding_size as u64, bmp_image_parser.pixel_size as u64,368);
+            }
+
+            4 => {
+                data_vec = extract_lsb_data::<RgbaPixel>(&mut bmp_image_parser.file_data[bmp_image_parser.pixel_map.pixel_map_start as usize..], bmp_image_parser.pixel_map.width as u64, bmp_image_parser.pixel_map.height as u64, bmp_image_parser.padding_size as u64, bmp_image_parser.pixel_size as u64, 368);
+            }
+            _ => {
+                println!("bmp test.rs Got bad value for pixel size, exiting ...");
+                exit(1);
+            }
+        }
+
+        assert_eq!(data_vec.is_ascii(), true);
+
     }
 }
