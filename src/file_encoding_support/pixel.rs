@@ -183,10 +183,10 @@ pub fn extract_lsb_data<P: Pixel>(
 ) -> Vec<u8> {
     let total_length = (width + padding) * length;
     
-    let current_byte: u32 = 0;
-    let current_bit: u32 = 0;
+    let mut bytes: u32 = 0;
+    let mut bits: u32 = 0;
 
-    let mut extracted_data: Vec<u8> = vec![0u8; (embedded_bits as usize / 8 + 1) as usize];
+    let mut extracted_data: Vec<u8> = vec![0u8; ((embedded_bits as usize / 8) + 1) as usize];
 
     for row in 0..length as usize {
         let start = (width + padding) * row as u64;
@@ -196,8 +196,6 @@ pub fn extract_lsb_data<P: Pixel>(
         let row_pixels: &mut [P] =
             unsafe { std::slice::from_raw_parts_mut(row_pixels_ptr, width as usize) };
 
-        let mut bits = 0;
-        let mut bytes: u32 = 0;
         for pixel in row_pixels.iter_mut() {
             let mut current_bit: u8 = pixel.first() & 1;
             if current_bit == 0 {
@@ -243,6 +241,10 @@ pub fn extract_lsb_data<P: Pixel>(
                     break;
                 }
             }
+        }
+        
+        if bits + (bytes * 8) == embedded_bits as u32 {
+            break;
         }
     }
 

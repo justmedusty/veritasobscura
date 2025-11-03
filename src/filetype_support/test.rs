@@ -176,7 +176,7 @@ mod bmp_tests{
             }
         }
 
-        assert_eq!(data_vec.is_ascii(), true);
+            assert_eq!(String::from_utf8(data_vec), Ok("This is a test embedding for testing purposes".to_string()));
 
     }
 }
