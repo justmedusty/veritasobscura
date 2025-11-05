@@ -137,7 +137,7 @@ mod bmp_tests{
         let mut bmp_image_parser = BmpImageParser::new("src/filetype_support/assets/sample-1024x1024.bmp");
         bmp_image_parser.parse_file();
 
-        let data_vec : Vec<u8> = "This is a test embedding for testing purposes".to_string().into_bytes();
+        let data_vec : Vec<u8> = "This is a test embedding for testing purposes".as_bytes().to_vec();
         match bmp_image_parser.pixel_size {
             3 => {
                 embed_lsb_data::<RgbPixel>(&data_vec, &mut bmp_image_parser.file_data[bmp_image_parser.pixel_map.pixel_map_start as usize..], bmp_image_parser.pixel_map.width as u64, bmp_image_parser.pixel_map.height as u64, bmp_image_parser.padding_size as u64, bmp_image_parser.pixel_size as u64);
@@ -164,11 +164,11 @@ mod bmp_tests{
         let mut data_vec: Vec<u8> = vec![0];
         match bmp_image_parser.pixel_size {
             3 => {
-               data_vec = extract_lsb_data::<RgbPixel>( &mut bmp_image_parser.file_data[bmp_image_parser.pixel_map.pixel_map_start as usize..], bmp_image_parser.pixel_map.width as u64, bmp_image_parser.pixel_map.height as u64, bmp_image_parser.padding_size as u64, bmp_image_parser.pixel_size as u64,368);
+               data_vec = extract_lsb_data::<RgbPixel>( &mut bmp_image_parser.file_data[bmp_image_parser.pixel_map.pixel_map_start as usize..], bmp_image_parser.pixel_map.width as u64, bmp_image_parser.pixel_map.height as u64, bmp_image_parser.padding_size as u64, bmp_image_parser.pixel_size as u64,360);
             }
 
             4 => {
-                data_vec = extract_lsb_data::<RgbaPixel>(&mut bmp_image_parser.file_data[bmp_image_parser.pixel_map.pixel_map_start as usize..], bmp_image_parser.pixel_map.width as u64, bmp_image_parser.pixel_map.height as u64, bmp_image_parser.padding_size as u64, bmp_image_parser.pixel_size as u64, 368);
+                data_vec = extract_lsb_data::<RgbaPixel>(&mut bmp_image_parser.file_data[bmp_image_parser.pixel_map.pixel_map_start as usize..], bmp_image_parser.pixel_map.width as u64, bmp_image_parser.pixel_map.height as u64, bmp_image_parser.padding_size as u64, bmp_image_parser.pixel_size as u64, 360);
             }
             _ => {
                 println!("bmp test.rs Got bad value for pixel size, exiting ...");
@@ -176,7 +176,7 @@ mod bmp_tests{
             }
         }
 
-            assert_eq!(data_vec, "This is a test embedding for testing purposes".to_string().into_bytes());
+            assert_eq!(data_vec, "This is a test embedding for testing purposes".as_bytes().to_vec());
 
     }
 }

@@ -113,13 +113,12 @@ pub fn embed_lsb_data<P: Pixel>(
 
         for pixel in row_pixels.iter_mut() {
             let mut bit: u8 = data[current_byte as usize] & (1 << current_bit);
-            increment_bit_and_byte_counters(&mut current_bit, &mut current_byte);
             if bit == 0 {
                 pixel.set_first(pixel.first() & !1);
             } else {
                 pixel.set_first(pixel.first() | 1);
             }
-
+            increment_bit_and_byte_counters(&mut current_bit, &mut current_byte);
             bits_to_embed = bits_to_embed.sub(1);
 
             if bits_to_embed == 0 {
@@ -127,13 +126,13 @@ pub fn embed_lsb_data<P: Pixel>(
             }
 
             bit = data[current_byte as usize] & (1 << current_bit);
-            increment_bit_and_byte_counters(&mut current_bit, &mut current_byte);
             if bit == 0 {
                 pixel.set_second(pixel.second() & !1);
             } else {
                 pixel.set_second(pixel.second() | 1);
             }
 
+            increment_bit_and_byte_counters(&mut current_bit, &mut current_byte);
             bits_to_embed = bits_to_embed.sub(1);
 
             if bits_to_embed == 0 {
@@ -141,13 +140,13 @@ pub fn embed_lsb_data<P: Pixel>(
             }
 
             bit = data[current_byte as usize] & (1 << current_bit);
-            increment_bit_and_byte_counters(&mut current_bit, &mut current_byte);
+
             if bit == 0 {
                 pixel.set_third(pixel.third() & !1);
             } else {
                 pixel.set_third(pixel.third() | 1);
             }
-
+            increment_bit_and_byte_counters(&mut current_bit, &mut current_byte);
             bits_to_embed = bits_to_embed.sub(1);
 
             if bits_to_embed == 0 {
@@ -156,15 +155,17 @@ pub fn embed_lsb_data<P: Pixel>(
 
             if pixel.pixel_size() == 4 {
                 bit = data[current_byte as usize] & (1 << current_bit);
-                increment_bit_and_byte_counters(&mut current_bit, &mut current_byte);
                 if bit == 0 {
                     pixel.set_fourth(pixel.fourth() & !1);
                 } else {
                     pixel.set_fourth(pixel.fourth() | 1);
                 }
+
+                increment_bit_and_byte_counters(&mut current_bit, &mut current_byte);
+                bits_to_embed = bits_to_embed.sub(1);
             }
 
-            bits_to_embed = bits_to_embed.sub(1);
+
 
             if bits_to_embed == 0 {
                 return;
@@ -250,8 +251,3 @@ pub fn extract_lsb_data<P: Pixel>(
 
     extracted_data
 }
-/*
-   Ret val is how many bits were embedded so it is known how many more need to be embedded in the next pixel transformation
-
-   under construction this is not usa ble at all yet
-*/
