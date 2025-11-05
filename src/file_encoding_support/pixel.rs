@@ -186,7 +186,8 @@ pub fn extract_lsb_data<P: Pixel>(
     
     let mut bytes: u32 = 0;
     let mut bits: u32 = 0;
-
+    
+    //The plus one is just in case we have a sub byte number of bits , we would lose those few bits or write into an invalid offset 
     let mut extracted_data: Vec<u8> = vec![0u8; ((embedded_bits as usize / 8) + 1) as usize];
 
     for row in 0..length as usize {
@@ -205,7 +206,7 @@ pub fn extract_lsb_data<P: Pixel>(
                 extracted_data[bytes as usize] |= 1 << bits;
             }
             increment_bit_and_byte_counters(&mut bits, &mut bytes);
-            if bits + (bytes * 8) == embedded_bits as u32 {
+            if bits + (bytes * 8)  >= embedded_bits as u32 {
                 break;
             }
 
@@ -216,7 +217,7 @@ pub fn extract_lsb_data<P: Pixel>(
                 extracted_data[bytes as usize] |= 1 << bits;
             }
             increment_bit_and_byte_counters(&mut bits, &mut bytes);
-            if bits + (bytes * 8) == embedded_bits as u32 {
+            if bits + (bytes * 8) >= embedded_bits as u32 {
                 break;
             }
             current_bit = pixel.third() & 1;
@@ -226,7 +227,7 @@ pub fn extract_lsb_data<P: Pixel>(
                 extracted_data[bytes as usize] |= 1 << bits;
             }
             increment_bit_and_byte_counters(&mut bits, &mut bytes);
-            if bits + (bytes * 8) == embedded_bits as u32 {
+            if bits + (bytes * 8)  >= embedded_bits as u32 {
                 break;
             }
 
@@ -238,13 +239,13 @@ pub fn extract_lsb_data<P: Pixel>(
                     extracted_data[bytes as usize] |= 1 << bits;
                 }
                 increment_bit_and_byte_counters(&mut bits, &mut bytes);
-                if bits + (bytes * 8) == embedded_bits as u32 {
+                if bits + (bytes * 8)  >= embedded_bits as u32 {
                     break;
                 }
             }
         }
         
-        if bits + (bytes * 8) == embedded_bits as u32 {
+        if bits + (bytes * 8)  >= embedded_bits as u32 {
             break;
         }
     }

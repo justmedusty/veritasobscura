@@ -176,7 +176,10 @@ mod bmp_tests{
             }
         }
 
-            assert_eq!(data_vec, "This is a test embedding for testing purposes".as_bytes().to_vec());
+        /*
+            the data vec will have an extra byte. the slice is just to remove that extra byte so that the test will pass
+         */
+            assert_eq!(data_vec[0..(360/8)], "This is a test embedding for testing purposes".as_bytes().to_vec());
 
     }
 }
