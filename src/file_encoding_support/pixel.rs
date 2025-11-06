@@ -103,6 +103,10 @@ pub fn embed_lsb_data<P: Pixel>(
     let mut current_byte: u32 = 0;
     let mut current_bit: u32 = 0;
 
+    if bits_to_embed > (width * length * pixel_size_bytes) as usize {
+        panic!("Not enough space in the image to embed {bits_to_embed} bits! Only have {} bits available!",width * length * pixel_size_bytes)
+    }
+
     for row in 0..length as usize {
         let start = (width + padding) * row as u64;
         let end = start + (width * pixel_size_bytes);
