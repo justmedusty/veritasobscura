@@ -384,6 +384,8 @@ impl FileEncodingSupport for BmpImageParser {
 
             _ => todo!(),
         }
+
+        self.bmp_header.bf_reserved1 = data.len() as u16;
     }
 
     fn retrieve_data(
@@ -398,6 +400,7 @@ impl FileEncodingSupport for BmpImageParser {
             exit(1);
         }
 
+        self.pixel_map.num_embedded_bits = Some(self.bmp_header.bf_reserved1 as usize * 8);
         match encoding_method {
             FileEncodingMethod::LeftToRight => match encoding {
                 FileEncoding::Lsb => {

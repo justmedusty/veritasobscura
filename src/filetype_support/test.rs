@@ -234,7 +234,7 @@ mod bmp_tests{
         /*
             the data vec will have an extra byte. the slice is just to remove that extra byte so that the test will pass
          */
-        assert_eq!(data_vec[0..(message_vec.len())],message_vec);
+        assert_eq!(String::from_utf8(data_vec[0..(message_vec.len())].to_owned()), String::from_utf8(message_vec));
     }
 }
 
