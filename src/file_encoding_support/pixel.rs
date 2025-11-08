@@ -108,7 +108,7 @@ pub fn embed_lsb_data<P: Pixel>(
     }
 
     for row in 0..length as usize {
-        let start = (width + padding) * row as u64;
+        let start = (width + padding) * pixel_size_bytes * row as u64;
         let end = start + (width * pixel_size_bytes);
         let row_start_ptr = unsafe { pixel_map.as_mut_ptr().add(start as usize) };
         let row_pixels_ptr = row_start_ptr as *mut P;
@@ -116,12 +116,15 @@ pub fn embed_lsb_data<P: Pixel>(
             unsafe { std::slice::from_raw_parts_mut(row_pixels_ptr, width as usize) };
 
         for pixel in row_pixels.iter_mut() {
+
             let mut bit: u8 = data[current_byte as usize] & (1 << current_bit);
+
             if bit == 0 {
                 pixel.set_first(pixel.first() & !1);
             } else {
                 pixel.set_first(pixel.first() | 1);
             }
+
             increment_bit_and_byte_counters(&mut current_bit, &mut current_byte);
             bits_to_embed = bits_to_embed.sub(1);
 
@@ -130,6 +133,7 @@ pub fn embed_lsb_data<P: Pixel>(
             }
 
             bit = data[current_byte as usize] & (1 << current_bit);
+
             if bit == 0 {
                 pixel.set_second(pixel.second() & !1);
             } else {
@@ -194,7 +198,7 @@ pub fn extract_lsb_data<P: Pixel>(
     let mut extracted_data: Vec<u8> = vec![0u8; ((embedded_bits as usize / 8) + 1) as usize];
 
     for row in 0..length as usize {
-        let start = (width + padding) * row as u64;
+        let start = (width + padding) * pixel_size_bytes * row as u64;
         let end = start + (width * pixel_size_bytes);
         let row_start_ptr = unsafe { pixel_map.as_mut_ptr().add(start as usize) };
         let row_pixels_ptr = row_start_ptr as *mut P;
