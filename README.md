@@ -18,3 +18,4 @@ Likely much more but will focus on this for now.
 Plan to support BMP, PNG, JPG, may branch into video files eventually if I desire the ability to encode large files.
 
 
+<img width="700" height="696" alt="image" src="https://github.com/user-attachments/assets/ff4dc10a-0864-4cd1-bcb8-05652c45e889" />
