@@ -5,13 +5,13 @@ So far just implementing generic functions and BMP file parsing. Will add more c
 
 Will be implementing :
 
-Left->Right LSB
-Right->Right LSB
-Wave Function LSB
+1) Left->Right LSB
+2) Right->Right LSB
+3) Wave Function LSB
 
-Left->Right Color Encoding
-Right->Right Color Encoding
-Wave Function Color Encoding
+4) Left->Right Color Encoding
+5) Right->Right Color Encoding
+6) Wave Function Color Encoding
 
 Likely much more but will focus on this for now.
 
