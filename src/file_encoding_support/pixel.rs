@@ -88,7 +88,7 @@ pub fn increment_bit_and_byte_counters(bit: &mut u32, byte: &mut u32) {
         *bit = 0;
     }
 }
-pub fn embed_lsb_data<P: Pixel>(
+pub fn embed_lsb_data_left_right<P: Pixel>(
     data: &Vec<u8>,
     pixel_map: &mut [u8],
     width: u64,
@@ -181,7 +181,7 @@ pub fn embed_lsb_data<P: Pixel>(
     }
 }
 
-pub fn extract_lsb_data<P: Pixel>(
+pub fn extract_lsb_data_left_right<P: Pixel>(
     pixel_map: &mut [u8],
     width: u64,
     length: u64,

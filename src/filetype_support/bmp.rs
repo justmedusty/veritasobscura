@@ -18,7 +18,7 @@
 use crate::file_encoding_support::file_encoding_support::{
     FileEncoding, FileEncodingFunctionDerivation, FileEncodingMethod, FileEncodingSupport,
 };
-use crate::file_encoding_support::pixel::{embed_lsb_data, extract_lsb_data, Pixel};
+use crate::file_encoding_support::pixel::{embed_lsb_data_left_right, extract_lsb_data_left_right, Pixel};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::mem;
@@ -373,9 +373,9 @@ impl FileEncodingSupport for BmpImageParser {
             FileEncodingMethod::LeftToRight => match encoding {
                 FileEncoding::Lsb => {
                     if(self.pixel_size == 3){
-                        embed_lsb_data::<RgbPixel>(&data, &mut self.file_data[self.pixel_map.pixel_map_start as usize..], self.pixel_map.width as u64, self.pixel_map.height as u64, self.padding_size as u64, 3)
+                        embed_lsb_data_left_right::<RgbPixel>(&data, &mut self.file_data[self.pixel_map.pixel_map_start as usize..], self.pixel_map.width as u64, self.pixel_map.height as u64, self.padding_size as u64, 3)
                     }else {
-                        embed_lsb_data::<RgbaPixel>(&data, &mut self.file_data[self.pixel_map.pixel_map_start as usize..], self.pixel_map.width as u64, self.pixel_map.height as u64, self.padding_size as u64, 4)
+                        embed_lsb_data_left_right::<RgbaPixel>(&data, &mut self.file_data[self.pixel_map.pixel_map_start as usize..], self.pixel_map.width as u64, self.pixel_map.height as u64, self.padding_size as u64, 4)
                     }
                 }
 
@@ -405,9 +405,9 @@ impl FileEncodingSupport for BmpImageParser {
             FileEncodingMethod::LeftToRight => match encoding {
                 FileEncoding::Lsb => {
                     if(self.pixel_size == 3){
-                        let data_vec : Vec<u8> = extract_lsb_data::<RgbPixel>(&mut self.file_data[self.pixel_map.pixel_map_start as usize..], self.pixel_map.width as u64, self.pixel_map.height as u64, self.padding_size as u64, 3, self.pixel_map.num_embedded_bits.unwrap() as u64);
+                        let data_vec : Vec<u8> = extract_lsb_data_left_right::<RgbPixel>(&mut self.file_data[self.pixel_map.pixel_map_start as usize..], self.pixel_map.width as u64, self.pixel_map.height as u64, self.padding_size as u64, 3, self.pixel_map.num_embedded_bits.unwrap() as u64);
                     }else {
-                        let data_vec : Vec<u8> = extract_lsb_data::<RgbaPixel>( &mut self.file_data[self.pixel_map.pixel_map_start as usize..], self.pixel_map.width as u64, self.pixel_map.height as u64, self.padding_size as u64, 4,self.pixel_map.num_embedded_bits.unwrap() as u64);
+                        let data_vec : Vec<u8> = extract_lsb_data_left_right::<RgbaPixel>( &mut self.file_data[self.pixel_map.pixel_map_start as usize..], self.pixel_map.width as u64, self.pixel_map.height as u64, self.padding_size as u64, 4,self.pixel_map.num_embedded_bits.unwrap() as u64);
 
                     }
                 }
