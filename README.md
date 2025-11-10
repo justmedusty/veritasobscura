@@ -1,4 +1,4 @@
-Will be a comprehensive stego tool
+8Will be a comprehensive stego tool
 
 
 So far just implementing generic functions and BMP file parsing. Will add more complex image formats once the generic functions are done.
@@ -19,3 +19,8 @@ Plan to support BMP, PNG, JPG, may branch into video files eventually if I desir
 
 
 <img width="700" height="696" alt="image" src="https://github.com/user-attachments/assets/ff4dc10a-0864-4cd1-bcb8-05652c45e889" />
+
+
+
+
+你所相信的真实世界并不真实。它已被扭曲和腐蚀，彻底丧失了平衡与真理的表象。是时候唤醒你内心的叛逆者，去洞悉终极真相。看清束缚你的枷锁，在顿悟的瞬间将其击碎。
