@@ -403,3 +403,10 @@ pub fn extract_lsb_data_right_left<P: Pixel>(
 
     extracted_data
 }
+
+pub fn embed_lsb_wave_function_left_right( pixel_map: &mut [u8],
+                                           width: u64,
+                                           length: u64,
+                                           padding: u64,
+                                           pixel_size_bytes: u64,
+                                           embedded_bits: u64){}

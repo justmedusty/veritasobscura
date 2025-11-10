@@ -28,6 +28,17 @@ pub struct ImageSupport<T: FileEncodingSupport + FileEncodingAlgorithms> {
     encoding_support: T,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum WaveFunction {
+    Horizontal,
+    Vertical,
+    DiagonalRight,
+    DiagonalLeft,
+    ZigZagHorizontal,
+    ZigZagVertical,
+    Sinusoidal,
+}
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Operation {
     Embed,
@@ -68,10 +79,6 @@ pub trait FileEncodingSupport {
     
 }
 
-pub enum WaveType {
-    Sine,
-    Cosine,
-}
 
 /*
     The idea at the time of writing this is the other parameters like the FileEncoding as defined above, will be stored in the specific object and can be referenced internally
@@ -80,5 +87,92 @@ pub trait FileEncodingAlgorithms{
     fn left_to_right(&self);
     fn right_to_left(&self);
     fn top_to_bottom(&self);
-    fn wave(&self, wave_type: WaveType, amplitude: f32, phase: f32, frequency: f32);
+    fn wave(&self, wave_type: WaveFunction, amplitude: f32, phase: f32, frequency: f32);
+}
+
+
+
+impl WaveFunction {
+    fn traverse(&self, rows: usize, cols: usize) -> Vec<(usize, usize)> {
+        let mut positions = Vec::new();
+
+        match self {
+            // Horizontal wave: Traverse each row from left to right
+            WaveFunction::Horizontal => {
+                for row in 0..rows {
+                    for col in 0..cols {
+                        positions.push((row, col));
+                    }
+                }
+            }
+            // Vertical wave: Traverse each column from top to bottom
+            WaveFunction::Vertical => {
+                for col in 0..cols {
+                    for row in 0..rows {
+                        positions.push((row, col));
+                    }
+                }
+            }
+            // DiagonalRight wave: Traverse diagonally from top-left to bottom-right
+            WaveFunction::DiagonalRight => {
+                let mut row = 0;
+                let mut col = 0;
+                while row < rows && col < cols {
+                    positions.push((row, col));
+                    row += 1;
+                    col += 1;
+                }
+            }
+            // DiagonalLeft wave: Traverse diagonally from top-right to bottom-left
+            WaveFunction::DiagonalLeft => {
+                let mut row = 0;
+                let mut col = cols - 1;
+                while row < rows && col >= 0 {
+                    positions.push((row, col));
+                    row += 1;
+                    col = col.saturating_sub(1);
+                }
+            }
+            // ZigZagHorizontal: Traverse rows in a zigzag pattern (left-right, then right-left)
+            WaveFunction::ZigZagHorizontal => {
+                for row in 0..rows {
+                    if row % 2 == 0 {
+                        for col in 0..cols {
+                            positions.push((row, col));
+                        }
+                    } else {
+                        for col in (0..cols).rev() {
+                            positions.push((row, col));
+                        }
+                    }
+                }
+            }
+            // ZigZagVertical: Traverse columns in a zigzag pattern (top-bottom, then bottom-top)
+            WaveFunction::ZigZagVertical => {
+                for col in 0..cols {
+                    if col % 2 == 0 {
+                        for row in 0..rows {
+                            positions.push((row, col));
+                        }
+                    } else {
+                        for row in (0..rows).rev() {
+                            positions.push((row, col));
+                        }
+                    }
+                }
+            }
+            // Sinusoidal wave: Simulate a sine wave pattern over rows and columns
+            WaveFunction::Sinusoidal => {
+                // A basic sine-wave-like pattern, with amplitude and frequency scaling
+                for row in 0..rows {
+                    let sine_wave_offset = ((row as f32 / rows as f32) * 2.0 * std::f32::consts::PI).sin();
+                    // Translate sine value to column index (oscillation over columns)
+                    let col_offset = ((sine_wave_offset + 1.0) * (cols as f32 / 2.0)) as usize;
+                    positions.push((row, col_offset));
+                }
+            }
+        }
+
+        positions
+    }
 }
