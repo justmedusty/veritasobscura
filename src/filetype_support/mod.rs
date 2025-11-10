@@ -19,3 +19,5 @@ pub mod filetype_support;
 pub mod svg;
 pub mod bmp;
 mod test;
+mod png;
+mod jpg;
