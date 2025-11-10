@@ -78,6 +78,7 @@ pub enum WaveType {
  */
 pub trait FileEncodingAlgorithms{
     fn left_to_right(&self);
+    fn right_to_left(&self);
     fn top_to_bottom(&self);
     fn wave(&self, wave_type: WaveType, amplitude: f32, phase: f32, frequency: f32);
 }
