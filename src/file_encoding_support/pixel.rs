@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 use std::ops::{Sub, SubAssign};
+use crate::file_encoding_support::file_encoding_support::WaveFunction;
 
 pub trait Pixel {
     fn red(&self) -> u8;
@@ -724,9 +725,21 @@ pub fn extract_lsb_data_right_left<P: Pixel>(
     extracted_data
 }
 
-pub fn embed_lsb_wave_function_left_right( pixel_map: &mut [u8],
+pub fn embed_lsb_wave_function_left_right<P : Pixel>( pixel_map: &mut [u8],
                                            width: u64,
                                            length: u64,
                                            padding: u64,
                                            pixel_size_bytes: u64,
-                                           embedded_bits: u64){}
+                                           embedded_bits: u64,
+wave_function: WaveFunction){
+    
+    let points = WaveFunction::traverse(&wave_function, width as usize, length as usize);
+    
+    for point in points{
+        let x : u64 = point.0 as u64;
+        let y : u64 = point.1 as u64;
+        
+        let offset = unsafe{ pixel_map.as_mut_ptr().add((((width + padding) * x) + (y * length)) as usize)};
+    }
+    
+}

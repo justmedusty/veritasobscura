@@ -93,7 +93,7 @@ pub trait FileEncodingAlgorithms{
 
 
 impl WaveFunction {
-    fn traverse(&self, rows: usize, cols: usize) -> Vec<(usize, usize)> {
+    pub(crate) fn traverse(&self, rows: usize, cols: usize) -> Vec<(usize, usize)> {
         let mut positions = Vec::new();
 
         match self {
