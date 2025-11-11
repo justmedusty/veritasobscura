@@ -219,6 +219,324 @@ fn extract_pixel_lsb<P: Pixel>(
     }
 }
 
+
+fn embed_pixel_color<P: Pixel>(
+    pixel: &mut P,
+    current_bit: &mut u32,
+    current_byte: &mut u32,
+    data: &Vec<u8>,
+    bits_to_embed: &mut usize,
+) {
+    let mut bit: u8 = data[*current_byte as usize] & (1 << *current_bit);
+
+    if bit == 0 {
+        pixel.set_first(0xFF);
+    } else {
+        pixel.set_first(0);
+    }
+
+    increment_bit_and_byte_counters(current_bit, current_byte);
+    bits_to_embed.sub_assign(1);
+
+    if *bits_to_embed == 0 {
+        return;
+    }
+
+    bit = data[*current_byte as usize] & (1 << *current_bit);
+
+    if bit == 0 {
+        pixel.set_second(0xFF);
+    } else {
+        pixel.set_second(0);
+    }
+
+    increment_bit_and_byte_counters(current_bit, current_byte);
+    bits_to_embed.sub_assign(1);
+
+    if *bits_to_embed == 0 {
+        return;
+    }
+
+    bit = data[*current_byte as usize] & (1 << *current_bit);
+
+    if bit == 0 {
+        pixel.set_third(0xFF);
+    } else {
+        pixel.set_third(0);
+    }
+    increment_bit_and_byte_counters(current_bit, current_byte);
+    bits_to_embed.sub_assign(1);
+
+    if *bits_to_embed == 0 {
+        return;
+    }
+
+    if pixel.pixel_size() == 4 {
+        bit = data[*current_byte as usize] & (1 << *current_bit);
+        if bit == 0 {
+            pixel.set_fourth(0xFF);
+        } else {
+            pixel.set_fourth(0);
+        }
+
+        increment_bit_and_byte_counters(current_bit, current_byte);
+        bits_to_embed.sub_assign(1);
+    }
+}
+
+fn extract_pixel_color<P: Pixel>(
+    pixel: &P,
+    bits: &mut u32,
+    bytes: &mut u32,
+    extracted_data: &mut Vec<u8>,
+    embedded_bits: usize,
+) {
+    let mut current_bit = pixel.first() == 0xFF;
+
+    if current_bit {
+        extracted_data[*bytes as usize] &= !(1 << *bits);
+    } else {
+        extracted_data[*bytes as usize] |= 1 << *bits;
+    }
+
+    increment_bit_and_byte_counters(bits, bytes);
+
+    if *bits + (*bytes * 8) == embedded_bits as u32 {
+        return;
+    }
+
+    current_bit = pixel.second() == 0xFF;
+
+    if current_bit {
+        extracted_data[*bytes as usize] &= !(1 << *bits);
+    } else {
+        extracted_data[*bytes as usize] |= 1 << *bits;
+    }
+
+    increment_bit_and_byte_counters(bits, bytes);
+
+    if *bits + (*bytes * 8) == embedded_bits as u32 {
+        return;
+    }
+
+    current_bit = pixel.third() == 0xFF;
+
+    if current_bit {
+        extracted_data[*bytes as usize] &= !(1 << *bits);
+    } else {
+        extracted_data[*bytes as usize] |= 1 << *bits;
+    }
+
+    increment_bit_and_byte_counters(&mut *bits, &mut *bytes);
+
+    if *bits + (*bytes * 8) == embedded_bits as u32 {
+        return;
+    }
+
+    if pixel.pixel_size() == 4 {
+        current_bit = pixel.fourth() == 0xFF;
+
+        if current_bit {
+            extracted_data[*bytes as usize] &= !(1 << *bits);
+        } else {
+            extracted_data[*bytes as usize] |= 1 << *bits;
+        }
+
+        increment_bit_and_byte_counters(bits, bytes);
+
+        if *bits + (*bytes * 8) == embedded_bits as u32 {
+            return;
+        }
+    }
+}
+
+pub fn embed_color_data_left_right<P: Pixel>(
+    data: &Vec<u8>,
+    pixel_map: &mut [u8],
+    width: u64,
+    length: u64,
+    padding: u64,
+    pixel_size_bytes: u64,
+) {
+    let total_length = (width + padding) * length;
+
+    let mut bits_to_embed = data.len() * 8;
+
+    let mut current_byte: u32 = 0;
+    let mut current_bit: u32 = 0;
+
+    if bits_to_embed > (width * length * pixel_size_bytes) as usize {
+        panic!(
+            "Not enough space in the image to embed {bits_to_embed} bits! Only have {} bits available!",
+            width * length * pixel_size_bytes
+        )
+    }
+
+    for row in 0..length as usize {
+        let start = (width + padding) * pixel_size_bytes * row as u64;
+        let end = start + (width * pixel_size_bytes);
+        let row_start_ptr = unsafe { pixel_map.as_mut_ptr().add(start as usize) };
+        let row_pixels_ptr = row_start_ptr as *mut P;
+        let row_pixels: &mut [P] =
+            unsafe { std::slice::from_raw_parts_mut(row_pixels_ptr, width as usize) };
+
+        for pixel in row_pixels.iter_mut() {
+            embed_pixel_color(
+                pixel,
+                &mut current_bit,
+                &mut current_byte,
+                &data,
+                &mut bits_to_embed,
+            );
+
+            if bits_to_embed == 0 {
+                return;
+            }
+        }
+    }
+}
+
+pub fn extract_color_data_left_right<P: Pixel>(
+    pixel_map: &mut [u8],
+    width: u64,
+    length: u64,
+    padding: u64,
+    pixel_size_bytes: u64,
+    embedded_bits: u64,
+) -> Vec<u8> {
+    let total_length = (width + padding) * length;
+
+    let mut bytes: u32 = 0;
+    let mut bits: u32 = 0;
+
+    //The plus one is just in case we have a sub byte number of bits , we would lose those few bits or write into an invalid offset
+    let mut extracted_data: Vec<u8> = vec![0u8; ((embedded_bits as usize / 8) + 1) as usize];
+
+    for row in 0..length as usize {
+        let start = (width + padding) * pixel_size_bytes * row as u64;
+        let end = start + (width * pixel_size_bytes);
+        let row_start_ptr = unsafe { pixel_map.as_mut_ptr().add(start as usize) };
+        let row_pixels_ptr = row_start_ptr as *mut P;
+        let row_pixels: &[P] =
+            unsafe { std::slice::from_raw_parts(row_pixels_ptr, width as usize) };
+
+        let mut current_bit: u8 = 0;
+
+        for pixel in row_pixels.iter() {
+            extract_pixel_color(
+                pixel,
+                &mut bits,
+                &mut bytes,
+                &mut extracted_data,
+                embedded_bits as usize,
+            );
+
+            if bits + (bytes * 8) == embedded_bits as u32 {
+                break;
+            }
+        }
+
+        if bits + (bytes * 8) == embedded_bits as u32 {
+            break;
+        }
+    }
+
+    extracted_data
+}
+
+pub fn embed_color_data_right_left<P: Pixel>(
+    data: &Vec<u8>,
+    pixel_map: &mut [u8],
+    width: u64,
+    length: u64,
+    padding: u64,
+    pixel_size_bytes: u64,
+) {
+    let total_length = (width + padding) * length;
+
+    let mut bits_to_embed = data.len() * 8;
+
+    let mut current_byte: u32 = 0;
+    let mut current_bit: u32 = 0;
+
+    if bits_to_embed > (width * length * pixel_size_bytes) as usize {
+        panic!(
+            "Not enough space in the image to embed {bits_to_embed} bits! Only have {} bits available!",
+            width * length * pixel_size_bytes
+        )
+    }
+
+    for row in (0..length).rev()  {
+        let start = (width + padding) * pixel_size_bytes * row as u64;
+        let end = start + (width * pixel_size_bytes);
+        let row_start_ptr = unsafe { pixel_map.as_mut_ptr().add(start as usize) };
+        let row_pixels_ptr = row_start_ptr as *mut P;
+        let row_pixels: &mut [P] =
+            unsafe { std::slice::from_raw_parts_mut(row_pixels_ptr, width as usize) };
+
+        for pixel in row_pixels.iter_mut().rev() {
+            embed_pixel_color(
+                pixel,
+                &mut current_bit,
+                &mut current_byte,
+                &data,
+                &mut bits_to_embed,
+            );
+
+            if bits_to_embed == 0 {
+                return;
+            }
+        }
+    }
+}
+
+pub fn extract_color_data_right_left<P: Pixel>(
+    pixel_map: &mut [u8],
+    width: u64,
+    length: u64,
+    padding: u64,
+    pixel_size_bytes: u64,
+    embedded_bits: u64,
+) -> Vec<u8> {
+    let total_length = (width + padding) * length;
+
+    let mut bytes: u32 = 0;
+    let mut bits: u32 = 0;
+
+    //The plus one is just in case we have a sub byte number of bits , we would lose those few bits or write into an invalid offset
+    let mut extracted_data: Vec<u8> = vec![0u8; ((embedded_bits as usize / 8) + 1) as usize];
+
+    for row in (0..length).rev() {
+        let start = (width + padding) * pixel_size_bytes * row as u64;
+        let end = start + (width * pixel_size_bytes);
+        let row_start_ptr = unsafe { pixel_map.as_mut_ptr().add(start as usize) };
+        let row_pixels_ptr = row_start_ptr as *mut P;
+        let row_pixels: &[P] =
+            unsafe { std::slice::from_raw_parts(row_pixels_ptr, width as usize) };
+
+        let mut current_bit: u8 = 0;
+
+        for pixel in row_pixels.iter().rev() {
+            extract_pixel_color(
+                pixel,
+                &mut bits,
+                &mut bytes,
+                &mut extracted_data,
+                embedded_bits as usize,
+            );
+
+            if bits + (bytes * 8) == embedded_bits as u32 {
+                break;
+            }
+        }
+
+        if bits + (bytes * 8) == embedded_bits as u32 {
+            break;
+        }
+    }
+
+    extracted_data
+}
 pub fn embed_lsb_data_left_right<P: Pixel>(
     data: &Vec<u8>,
     pixel_map: &mut [u8],
