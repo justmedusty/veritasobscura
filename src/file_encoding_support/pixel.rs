@@ -230,9 +230,9 @@ fn embed_pixel_color<P: Pixel>(
     let mut bit: u8 = data[*current_byte as usize] & (1 << *current_bit);
 
     if bit == 0 {
-        pixel.set_first(0xFF);
+        pixel.set_first(pixel.first() | 0b110);
     } else {
-        pixel.set_first(0);
+        pixel.set_first(pixel.first() & !0b110);
     }
 
     increment_bit_and_byte_counters(current_bit, current_byte);
@@ -245,9 +245,9 @@ fn embed_pixel_color<P: Pixel>(
     bit = data[*current_byte as usize] & (1 << *current_bit);
 
     if bit == 0 {
-        pixel.set_second(0xFF);
+        pixel.set_second(pixel.second() | 0b110);
     } else {
-        pixel.set_second(0);
+        pixel.set_second(pixel.second() & !0b110);
     }
 
     increment_bit_and_byte_counters(current_bit, current_byte);
@@ -260,10 +260,11 @@ fn embed_pixel_color<P: Pixel>(
     bit = data[*current_byte as usize] & (1 << *current_bit);
 
     if bit == 0 {
-        pixel.set_third(0xFF);
+        pixel.set_third(pixel.third() | 0b110);
     } else {
-        pixel.set_third(0);
+        pixel.set_third(pixel.third() & !0b110);
     }
+
     increment_bit_and_byte_counters(current_bit, current_byte);
     bits_to_embed.sub_assign(1);
 
@@ -274,10 +275,11 @@ fn embed_pixel_color<P: Pixel>(
     if pixel.pixel_size() == 4 {
         bit = data[*current_byte as usize] & (1 << *current_bit);
         if bit == 0 {
-            pixel.set_fourth(0xFF);
+            pixel.set_fourth(pixel.fourth() | 0b110);
         } else {
-            pixel.set_fourth(0);
+            pixel.set_fourth(pixel.fourth() & !0b110);
         }
+
 
         increment_bit_and_byte_counters(current_bit, current_byte);
         bits_to_embed.sub_assign(1);
@@ -291,7 +293,7 @@ fn extract_pixel_color<P: Pixel>(
     extracted_data: &mut Vec<u8>,
     embedded_bits: usize,
 ) {
-    let mut current_bit = pixel.first() == 0xFF;
+    let mut current_bit = pixel.first() & 0b110 == 0b110;
 
     if current_bit {
         extracted_data[*bytes as usize] &= !(1 << *bits);
@@ -305,7 +307,7 @@ fn extract_pixel_color<P: Pixel>(
         return;
     }
 
-    current_bit = pixel.second() == 0xFF;
+    current_bit = pixel.second()  & 0b110 == 0b110;
 
     if current_bit {
         extracted_data[*bytes as usize] &= !(1 << *bits);
@@ -319,7 +321,7 @@ fn extract_pixel_color<P: Pixel>(
         return;
     }
 
-    current_bit = pixel.third() == 0xFF;
+    current_bit = pixel.third()  & 0b110 == 0b110;
 
     if current_bit {
         extracted_data[*bytes as usize] &= !(1 << *bits);
@@ -334,7 +336,7 @@ fn extract_pixel_color<P: Pixel>(
     }
 
     if pixel.pixel_size() == 4 {
-        current_bit = pixel.fourth() == 0xFF;
+        current_bit = pixel.fourth()  & 0b110 == 0b110;
 
         if current_bit {
             extracted_data[*bytes as usize] &= !(1 << *bits);
