@@ -15,8 +15,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
-use std::ops::{Sub, SubAssign};
 use crate::file_encoding_support::file_encoding_support::WaveFunction;
+use std::ops::{BitOrAssign, BitXor, BitXorAssign, Sub, SubAssign};
 
 pub trait Pixel {
     fn red(&self) -> u8;
@@ -220,7 +220,6 @@ fn extract_pixel_lsb<P: Pixel>(
     }
 }
 
-
 fn embed_pixel_color<P: Pixel>(
     pixel: &mut P,
     current_bit: &mut u32,
@@ -228,63 +227,43 @@ fn embed_pixel_color<P: Pixel>(
     data: &Vec<u8>,
     bits_to_embed: &mut usize,
 ) {
-    let mut bit: u8 = data[*current_byte as usize] & (1 << *current_bit);
+    let value: u32 = 0x2A7C312E;
+    let value2: u32 = 0x81EF0D9C;
+    let value3: u32 = 0x7CF80978;
+    let bit: u8 = data[*current_byte as usize] & (1 << *current_bit);
+
+    let mut total: u32 = 0;
+
+    if (pixel.pixel_size() == 4) {
+        total = ((pixel.fourth() as u32) << 24)
+            | ((pixel.third() as u32) << 16)
+            | ((pixel.second() as u32) << 8)
+            | (pixel.first() as u32);
+    } else {
+        total = ((pixel.third() as u32) << 16)
+            | ((pixel.second() as u32) << 8)
+            | (pixel.first() as u32);
+    }
+
 
     if bit == 0 {
-        pixel.set_first(pixel.first() | 0b110);
+        total.bitxor_assign(value2);
+        total.bitxor_assign(value3);
     } else {
-        pixel.set_first(pixel.first() & !0b110);
+        total.bitxor_assign(value);
+        total.bitxor_assign(value3);
+    }
+
+    pixel.set_first(total as u8);
+    pixel.set_second((total << 8) as u8);
+    pixel.set_third((total << 16) as u8);
+
+    if (pixel.pixel_size() == 4) {
+        pixel.set_fourth((total << 24) as u8);
     }
 
     increment_bit_and_byte_counters(current_bit, current_byte);
     bits_to_embed.sub_assign(1);
-
-    if *bits_to_embed == 0 {
-        return;
-    }
-
-    bit = data[*current_byte as usize] & (1 << *current_bit);
-
-    if bit == 0 {
-        pixel.set_second(pixel.second() | 0b110);
-    } else {
-        pixel.set_second(pixel.second() & !0b110);
-    }
-
-    increment_bit_and_byte_counters(current_bit, current_byte);
-    bits_to_embed.sub_assign(1);
-
-    if *bits_to_embed == 0 {
-        return;
-    }
-
-    bit = data[*current_byte as usize] & (1 << *current_bit);
-
-    if bit == 0 {
-        pixel.set_third(pixel.third() | 0b110);
-    } else {
-        pixel.set_third(pixel.third() & !0b110);
-    }
-
-    increment_bit_and_byte_counters(current_bit, current_byte);
-    bits_to_embed.sub_assign(1);
-
-    if *bits_to_embed == 0 {
-        return;
-    }
-
-    if pixel.pixel_size() == 4 {
-        bit = data[*current_byte as usize] & (1 << *current_bit);
-        if bit == 0 {
-            pixel.set_fourth(pixel.fourth() | 0b110);
-        } else {
-            pixel.set_fourth(pixel.fourth() & !0b110);
-        }
-
-
-        increment_bit_and_byte_counters(current_bit, current_byte);
-        bits_to_embed.sub_assign(1);
-    }
 }
 
 fn extract_pixel_color<P: Pixel>(
@@ -294,62 +273,41 @@ fn extract_pixel_color<P: Pixel>(
     extracted_data: &mut Vec<u8>,
     embedded_bits: usize,
 ) {
-    let mut current_bit = pixel.first() & 0b110 == 0b110;
+    let value: u32 = 0x2A7C312E;
+    let value2: u32 = 0x81EF0D9C;
+    let value3: u32 = 0x7CF80978;
 
-    if current_bit {
-        extracted_data[*bytes as usize] &= !(1 << *bits);
-    } else {
-        extracted_data[*bytes as usize] |= 1 << *bits;
-    }
+    let mut total: u32 = 0;
 
-    increment_bit_and_byte_counters(bits, bytes);
-
-    if *bits + (*bytes * 8) == embedded_bits as u32 {
-        return;
-    }
-
-    current_bit = pixel.second()  & 0b110 == 0b110;
-
-    if current_bit {
-        extracted_data[*bytes as usize] &= !(1 << *bits);
-    } else {
-        extracted_data[*bytes as usize] |= 1 << *bits;
-    }
-
-    increment_bit_and_byte_counters(bits, bytes);
-
-    if *bits + (*bytes * 8) == embedded_bits as u32 {
-        return;
-    }
-
-    current_bit = pixel.third()  & 0b110 == 0b110;
-
-    if current_bit {
-        extracted_data[*bytes as usize] &= !(1 << *bits);
-    } else {
-        extracted_data[*bytes as usize] |= 1 << *bits;
-    }
-
-    increment_bit_and_byte_counters(&mut *bits, &mut *bytes);
-
-    if *bits + (*bytes * 8) == embedded_bits as u32 {
-        return;
-    }
+    let mut current_bit: bool = false;
 
     if pixel.pixel_size() == 4 {
-        current_bit = pixel.fourth()  & 0b110 == 0b110;
+        total = ((pixel.fourth() as u32) << 24)
+            | ((pixel.third() as u32) << 16)
+            | ((pixel.second() as u32) << 8)
+            | (pixel.first() as u32);
+    } else {
+        total = ((pixel.third() as u32) << 16)
+            | ((pixel.second() as u32) << 8)
+            | (pixel.first() as u32);
+    }
 
-        if current_bit {
-            extracted_data[*bytes as usize] &= !(1 << *bits);
-        } else {
-            extracted_data[*bytes as usize] |= 1 << *bits;
-        }
+    let decoded_value = total.bitxor(value3);
+    if decoded_value == value2 {
+        current_bit = false;
+    } else if decoded_value == value {
+        current_bit = true;
+    }
 
-        increment_bit_and_byte_counters(bits, bytes);
+    if current_bit {
+        extracted_data[*bytes as usize] |= 1 << *bits;
+    } else {
+        extracted_data[*bytes as usize] &= !(1 << *bits);
+    }
 
-        if *bits + (*bytes * 8) == embedded_bits as u32 {
-            return;
-        }
+    increment_bit_and_byte_counters(bits, bytes);
+    if *bits + (*bytes * 8) == embedded_bits as u32 {
+        return;
     }
 }
 
@@ -368,7 +326,7 @@ pub fn embed_color_data_left_right<P: Pixel>(
     let mut current_byte: u32 = 0;
     let mut current_bit: u32 = 0;
 
-    if bits_to_embed > (width * length * pixel_size_bytes) as usize {
+    if bits_to_embed > (width * length) as usize {
         panic!(
             "Not enough space in the image to embed {bits_to_embed} bits! Only have {} bits available!",
             width * length * pixel_size_bytes
@@ -462,14 +420,14 @@ pub fn embed_color_data_right_left<P: Pixel>(
     let mut current_byte: u32 = 0;
     let mut current_bit: u32 = 0;
 
-    if bits_to_embed > (width * length * pixel_size_bytes) as usize {
+    if bits_to_embed > (width * length) as usize {
         panic!(
             "Not enough space in the image to embed {bits_to_embed} bits! Only have {} bits available!",
             width * length * pixel_size_bytes
         )
     }
 
-    for row in (0..length).rev()  {
+    for row in (0..length).rev() {
         let start = (width + padding) * pixel_size_bytes * row as u64;
         let end = start + (width * pixel_size_bytes);
         let row_start_ptr = unsafe { pixel_map.as_mut_ptr().add(start as usize) };
@@ -725,21 +683,25 @@ pub fn extract_lsb_data_right_left<P: Pixel>(
     extracted_data
 }
 
-pub fn embed_lsb_wave_function_left_right<P : Pixel>( pixel_map: &mut [u8],
-                                           width: u64,
-                                           length: u64,
-                                           padding: u64,
-                                           pixel_size_bytes: u64,
-                                           embedded_bits: u64,
-wave_function: WaveFunction){
-    
+pub fn embed_lsb_wave_function_left_right<P: Pixel>(
+    pixel_map: &mut [u8],
+    width: u64,
+    length: u64,
+    padding: u64,
+    pixel_size_bytes: u64,
+    embedded_bits: u64,
+    wave_function: WaveFunction,
+) {
     let points = WaveFunction::traverse(&wave_function, width as usize, length as usize);
-    
-    for point in points{
-        let x : u64 = point.0 as u64;
-        let y : u64 = point.1 as u64;
-        
-        let offset = unsafe{ pixel_map.as_mut_ptr().add((((width + padding) * x) + (y * length)) as usize)};
+
+    for point in points {
+        let x: u64 = point.0 as u64;
+        let y: u64 = point.1 as u64;
+
+        let offset = unsafe {
+            pixel_map
+                .as_mut_ptr()
+                .add((((width + padding) * x) + (y * length)) as usize)
+        };
     }
-    
 }
