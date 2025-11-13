@@ -246,13 +246,14 @@ fn embed_pixel_color<P: Pixel>(
     }
 
 
+    total.bitxor_assign(value3);
+    
     if bit == 0 {
         total.bitxor_assign(value2);
-        total.bitxor_assign(value3);
     } else {
         total.bitxor_assign(value);
-        total.bitxor_assign(value3);
     }
+
 
     pixel.set_first(total as u8);
     pixel.set_second((total << 8) as u8);
@@ -293,10 +294,19 @@ fn extract_pixel_color<P: Pixel>(
     }
 
     let decoded_value = total.bitxor(value3);
-    if decoded_value == value2 {
+
+    let mut mask : u32 = 0xFFFFFFFF;
+
+    if(pixel.pixel_size() == 3) {
+        mask = 0x00FFFFFF;
+    }
+
+    if decoded_value & mask == value2 & mask {
         current_bit = false;
-    } else if decoded_value == value {
+    } else if decoded_value & mask == value & mask {
         current_bit = true;
+    } else {
+        panic!("Ooops!");
     }
 
     if current_bit {
