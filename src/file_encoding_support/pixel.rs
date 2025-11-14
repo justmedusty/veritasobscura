@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 use crate::file_encoding_support::file_encoding_support::WaveFunction;
-use std::ops::{BitOrAssign, BitXor, BitXorAssign, Sub, SubAssign};
+use std::ops::{AddAssign, BitOrAssign, BitXor, BitXorAssign, Sub, SubAssign};
 
 pub trait Pixel {
     fn red(&self) -> u8;
@@ -227,40 +227,70 @@ fn embed_pixel_color<P: Pixel>(
     data: &Vec<u8>,
     bits_to_embed: &mut usize,
 ) {
-    let value: u32 = 0x2A7C312E;
-    let value2: u32 = 0x81EF0D9C;
-    let value3: u32 = 0x7CF80978;
-    let bit: u8 = data[*current_byte as usize] & (1 << *current_bit);
 
-    let mut total: u32 = 0;
+    let bit = data[*current_byte as usize] & (1 << *current_bit);
+    let mut ones = 0;
 
-    if (pixel.pixel_size() == 4) {
-        total = ((pixel.fourth() as u32) << 24)
-            | ((pixel.third() as u32) << 16)
-            | ((pixel.second() as u32) << 8)
-            | (pixel.first() as u32);
-    } else {
-        total = ((pixel.third() as u32) << 16)
-            | ((pixel.second() as u32) << 8)
-            | (pixel.first() as u32);
+    let first = pixel.first();
+    let second = pixel.second();
+    let third = pixel.third();
+    let fourth = match pixel.pixel_size() {
+        3 => 0,
+        4 => pixel.fourth(),
+        _ => unreachable!(),
+    };
+
+    for i in 0..8 {
+        if(first & (1 << i)) != 0 {
+            ones.add_assign(1);
+        }
+        if(second & (1 << i)) != 0 {
+            ones.add_assign(1);
+        }
+        if(third & (1 << i)) != 0 {
+            ones.add_assign(1);
+        }
+
+        if(fourth & (1 << i)) != 0 {
+            ones.add_assign(1);
+        }
+
     }
 
+    if(bit == 0 && ones % 2 == 0){
+        for i in 0..8 {
+            if(first & (1 << i)) != 0 {
+                ones.add_assign(1);
+            }
+            if(second & (1 << i)) != 0 {
+                ones.add_assign(1);
+            }
+            if(third & (1 << i)) != 0 {
+                ones.add_assign(1);
+            }
 
-    total.bitxor_assign(value3);
-    
-    if bit == 0 {
-        total.bitxor_assign(value2);
-    } else {
-        total.bitxor_assign(value);
-    }
+            if(fourth & (1 << i)) != 0 {
+                ones.add_assign(1);
+            }
 
+        }
+    }else if(bit == 1 && ones % 2 != 0){
+        for i in 0..8 {
+            if(first & (1 << i)) != 0 {
+                ones.add_assign(1);
+            }
+            if(second & (1 << i)) != 0 {
+                ones.add_assign(1);
+            }
+            if(third & (1 << i)) != 0 {
+                ones.add_assign(1);
+            }
 
-    pixel.set_first(total as u8);
-    pixel.set_second((total << 8) as u8);
-    pixel.set_third((total << 16) as u8);
+            if(fourth & (1 << i)) != 0 {
+                ones.add_assign(1);
+            }
 
-    if (pixel.pixel_size() == 4) {
-        pixel.set_fourth((total << 24) as u8);
+        }
     }
 
     increment_bit_and_byte_counters(current_bit, current_byte);
@@ -274,40 +304,7 @@ fn extract_pixel_color<P: Pixel>(
     extracted_data: &mut Vec<u8>,
     embedded_bits: usize,
 ) {
-    let value: u32 = 0x2A7C312E;
-    let value2: u32 = 0x81EF0D9C;
-    let value3: u32 = 0x7CF80978;
 
-    let mut total: u32 = 0;
-
-    let mut current_bit: bool = false;
-
-    if pixel.pixel_size() == 4 {
-        total = ((pixel.fourth() as u32) << 24)
-            | ((pixel.third() as u32) << 16)
-            | ((pixel.second() as u32) << 8)
-            | (pixel.first() as u32);
-    } else {
-        total = ((pixel.third() as u32) << 16)
-            | ((pixel.second() as u32) << 8)
-            | (pixel.first() as u32);
-    }
-
-    let decoded_value = total.bitxor(value3);
-
-    let mut mask : u32 = 0xFFFFFFFF;
-
-    if(pixel.pixel_size() == 3) {
-        mask = 0x00FFFFFF;
-    }
-
-    if decoded_value & mask == value2 & mask {
-        current_bit = false;
-    } else if decoded_value & mask == value & mask {
-        current_bit = true;
-    } else {
-        panic!("Ooops!");
-    }
 
     if current_bit {
         extracted_data[*bytes as usize] |= 1 << *bits;
