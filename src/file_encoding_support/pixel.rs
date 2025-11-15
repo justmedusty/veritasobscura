@@ -227,7 +227,6 @@ fn embed_pixel_color<P: Pixel>(
     data: &Vec<u8>,
     bits_to_embed: &mut usize,
 ) {
-
     let bit = data[*current_byte as usize] & (1 << *current_bit);
     let mut ones = 0;
 
@@ -240,58 +239,127 @@ fn embed_pixel_color<P: Pixel>(
         _ => unreachable!(),
     };
 
+    let mut changed =false;
+
     for i in 0..8 {
-        if(first & (1 << i)) != 0 {
-            ones.add_assign(1);
+        if (first & (1 << i)) == 0 {
+            ones += 1;
         }
-        if(second & (1 << i)) != 0 {
-            ones.add_assign(1);
+        if (second & (1 << i)) == 0 {
+            ones += 1;
         }
-        if(third & (1 << i)) != 0 {
-            ones.add_assign(1);
-        }
-
-        if(fourth & (1 << i)) != 0 {
-            ones.add_assign(1);
+        if (third & (1 << i)) == 0 {
+            ones += 1;
         }
 
-    }
-
-    if(bit == 0 && ones % 2 == 0){
-        for i in 0..8 {
-            if(first & (1 << i)) != 0 {
-                ones.add_assign(1);
-            }
-            if(second & (1 << i)) != 0 {
-                ones.add_assign(1);
-            }
-            if(third & (1 << i)) != 0 {
-                ones.add_assign(1);
-            }
-
-            if(fourth & (1 << i)) != 0 {
-                ones.add_assign(1);
-            }
-
-        }
-    }else if(bit == 1 && ones % 2 != 0){
-        for i in 0..8 {
-            if(first & (1 << i)) != 0 {
-                ones.add_assign(1);
-            }
-            if(second & (1 << i)) != 0 {
-                ones.add_assign(1);
-            }
-            if(third & (1 << i)) != 0 {
-                ones.add_assign(1);
-            }
-
-            if(fourth & (1 << i)) != 0 {
-                ones.add_assign(1);
-            }
-
+        if (pixel.pixel_size() ==4 && (fourth & (1 << i)) == 0) {
+            ones += 1;
         }
     }
+
+    if (bit == 0 && ones % 2 == 0) {
+        for i in 0..8 {
+            if (first & (1 << i)) == 0 {
+                pixel.set_first(first | (1 << i));
+                changed = true;
+                break;
+            }
+
+            if (second & (1 << i)) == 0 {
+                pixel.set_second(second | (1 << i));
+                changed = true;
+                break;
+            }
+            if (third & (1 << i)) == 0 {
+                pixel.set_third(third | (1 << i));
+                changed = true;
+                break;
+            }
+
+            if (pixel.pixel_size() == 4 && (fourth & (1 << i)) == 0) {
+                pixel.set_fourth(fourth | (1 << i));
+                changed = true;
+                break;
+            }
+        }
+
+        if(!changed){
+            for i in 0..8 {
+                if (first & (1 << i)) != 0 {
+                    pixel.set_first(first & !(1 << i));
+                    changed = true;
+                    break;
+                }
+                if (second & (1 << i)) != 0 {
+                    pixel.set_second(second & !(1 << i));
+                    changed = true;
+                    break;
+                }
+                if (third & (1 << i)) != 0 {
+                    pixel.set_third(third & !(1 << i));
+                    changed = true;
+                    break;
+                }
+
+                if (pixel.pixel_size() == 4 && (fourth & (1 << i)) != 0) {
+                    pixel.set_fourth(fourth & !(1 << i));
+                    changed = true;
+                    break;
+                }
+            }
+        }
+    } else if (bit == 1 && ones % 2 != 0) {
+        for i in 0..8 {
+            if (first & (1 << i)) == 0 {
+                pixel.set_first(first | (1 << i));
+                changed = true;
+                break;
+            }
+            if (second & (1 << i)) == 0 {
+                pixel.set_second(second | (1 << i));
+                changed = true;
+                break;
+            }
+            if (third & (1 << i)) == 0 {
+                pixel.set_third(third | (1 << i));
+                changed = true;
+                break;
+            }
+
+            if (pixel.pixel_size() == 4 && (fourth & (1 << i)) == 0) {
+                pixel.set_fourth(fourth | (1 << i));
+                changed = true;
+                break;
+            }
+        }
+
+        if(!changed){
+            for i in 0..8 {
+                if (first & (1 << i)) != 0 {
+                    pixel.set_first(first & !(1 << i));
+                    changed = true;
+                    break;
+                }
+                if (second & (1 << i)) != 0 {
+                    pixel.set_second(second & !(1 << i));
+                    changed = true;
+                    break;
+                }
+                if (third & (1 << i)) != 0 {
+                    pixel.set_third(third & !(1 << i));
+                    changed = true;
+                    break;
+                }
+
+                if (pixel.pixel_size() == 4 && (fourth & (1 << i)) != 0) {
+                    pixel.set_fourth(fourth & !(1 << i));
+                    changed = true;
+                    break;
+                }
+            }
+        }
+    }
+
 
     increment_bit_and_byte_counters(current_bit, current_byte);
     bits_to_embed.sub_assign(1);
@@ -304,7 +372,36 @@ fn extract_pixel_color<P: Pixel>(
     extracted_data: &mut Vec<u8>,
     embedded_bits: usize,
 ) {
+    let mut ones = 0;
 
+    let first = pixel.first();
+    let second = pixel.second();
+    let third = pixel.third();
+    let fourth = match pixel.pixel_size() {
+        3 => 0,
+        4 => pixel.fourth(),
+        _ => unreachable!(),
+    };
+
+    for i in 0..8 {
+        if (first & (1 << i)) != 0 {
+            ones += 1;
+        }
+        if (second & (1 << i)) != 0 {
+            ones += 1;
+        }
+        if (third & (1 << i)) != 0 {
+            ones += 1;
+        }
+        if (pixel.pixel_size() == 4 && (fourth & (1 << i)) != 0) {
+            ones += 1;
+        }
+    }
+    let mut current_bit = false;
+
+    if (ones % 2 == 0) {
+        current_bit = true;
+    }
 
     if current_bit {
         extracted_data[*bytes as usize] |= 1 << *bits;
