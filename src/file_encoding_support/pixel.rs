@@ -257,7 +257,7 @@ fn embed_pixel_color<P: Pixel>(
         }
     }
 
-    if ((bit == 0 && ones % 2 == 0) || (bit == 1 && ones % 2 != 0)) {
+    if ((bit == 0 && (ones % 2 == 0)) || (bit != 0 && (ones % 2 != 0))) {
         for i in 0..8 {
             if (first & (1 << i)) == 0 {
                 pixel.set_first(first | (1 << i));
@@ -270,6 +270,7 @@ fn embed_pixel_color<P: Pixel>(
                 changed = true;
                 break;
             }
+
             if (third & (1 << i)) == 0 {
                 pixel.set_third(third | (1 << i));
                 changed = true;
@@ -287,23 +288,19 @@ fn embed_pixel_color<P: Pixel>(
             for i in 0..8 {
                 if (first & (1 << i)) != 0 {
                     pixel.set_first(first & !(1 << i));
-                    changed = true;
                     break;
                 }
                 if (second & (1 << i)) != 0 {
                     pixel.set_second(second & !(1 << i));
-                    changed = true;
                     break;
                 }
                 if (third & (1 << i)) != 0 {
                     pixel.set_third(third & !(1 << i));
-                    changed = true;
                     break;
                 }
 
                 if (pixel.pixel_size() == 4 && (fourth & (1 << i)) != 0) {
                     pixel.set_fourth(fourth & !(1 << i));
-                    changed = true;
                     break;
                 }
             }
@@ -361,9 +358,7 @@ fn extract_pixel_color<P: Pixel>(
 
     increment_bit_and_byte_counters(bits, bytes);
 
-    if *bits + (*bytes * 8) == embedded_bits as u32 {
-        return;
-    }
+
 }
 
 pub fn embed_color_data_left_right<P: Pixel>(
