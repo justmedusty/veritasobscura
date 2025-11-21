@@ -22,33 +22,6 @@ pub mod arg_handling {
     use std::process::exit;
     use crate::file_encoding_support;
     use crate::file_encoding_support::file_encoding_support::{FileEncodingSupport, ImageSupport};
-    /*
-           Enum we will use to pass encryption info for creation of context
-        */
-    #[derive(Clone, Copy)]
-    pub enum EncryptionInfo {
-        AesCbc,
-        AesCtr,
-        AesEcb,
-        Rc4,
-    }
-
-    #[derive(Clone, Copy)]
-    pub enum KeySize {
-        Size128,
-        Size192,
-        Size256,
-    }
-
-    impl Into<usize> for KeySize {
-        fn into(self) -> usize {
-            match self {
-                KeySize::Size128 => 128,
-                KeySize::Size192 => 192,
-                KeySize::Size256 => 256,
-            }
-        }
-    }
 
 
     pub fn parse_arguments<T: file_encoding_support::file_encoding_support::FileEncodingAlgorithms + file_encoding_support::file_encoding_support::FileEncodingSupport>(args: Vec<String>) -> ImageSupport<T> {
@@ -83,45 +56,10 @@ pub mod arg_handling {
             exit(ERROR);
         }
 
-        let port = match args[1].parse::<u16>() {
-            Ok(x) if x < 1024 => {
-                eprintln!("Port must not be in the reserved range!");
-                exit(ERROR);
-            }
-            Ok(x) => x,
-            Err(_) => {
-                eprintln!("Error occurred while parsing port!");
-                exit(ERROR);
-            }
-        };
+        todo!()
 
-        let size: KeySize = match args[3].parse::<usize>() {
-            Ok(128) => KeySize::Size128,
-            Ok(192) => KeySize::Size192,
-            Ok(256) => KeySize::Size256,
-            Ok(_) => {
-                eprintln!("Invalid key size! Valid sizes are: 128, 192, 256");
-                exit(ERROR);
-            }
-            Err(_) => {
-                eprintln!("Error parsing keysize!");
-                exit(ERROR);
-            }
-        };
 
-        let size_usize = args[3].parse::<usize>().unwrap();
 
-        let encryption_type = match args[2].as_str() {
-            "AesCbc" => EncryptionInfo::AesCbc,
-            "AesCtr" => EncryptionInfo::AesCtr,
-            "AesEcb" => EncryptionInfo::AesEcb,
-            "Rc4" => EncryptionInfo::Rc4,
-            _ => {
-                eprintln!("Invalid encryption type!");
-                eprintln!("Try --help for help.");
-                exit(ERROR);
-            }
-        };
 
 
     }
