@@ -25,32 +25,34 @@ pub mod arg_handling {
 
 
     pub fn parse_arguments<T: file_encoding_support::file_encoding_support::FileEncodingAlgorithms + file_encoding_support::file_encoding_support::FileEncodingSupport>(args: Vec<String>) -> ImageSupport<T> {
-        let use_key: bool = args.len() == 5;
-        if (args.len() > 5) {
-            println!("Too many arguments!");
-            println!("Usage: maya encoding(Lsb,PixelValueDifferencing,Hamming) encoding-method(LeftRight, TopBottom, SinWave,CosWave, PolyFunc, FractalFunc) operation(embed/extract) <optional>'Message to be hidden'</optional> filename.ext(either the file to extract or the filename to embed into)");
-            println!("Try --help for help.");
-            exit(ERROR);
-        }
-
-        if { args.len() < 2 } {
-            println!("Usage: maya encoding(Lsb,PixelValueDifferencing,Hamming) encoding-method(LeftRight, TopBottom, SinWave,CosWave, PolyFunc, FractalFunc) operation(embed/extract) <optional>'Message to be hidden'</optional> filename.ext(either the file to extract or the filename to embed into)");
-            println!("Try --help for help.");
-            exit(ERROR);
-        }
-        if (args[1] == "--help") {
+        if ( args.len() <= 2 && args[1] == "--help") {
             println!("Usage: maya encoding(Lsb,PixelValueDifferencing,Hamming) encoding-method(LeftRight, TopBottom, SinWave,CosWave, PolyFunc, FractalFunc) operation(embed/extract) <optional>'Message to be hidden'</optional> filename.ext(either the file to extract or the filename to embed into)");
             println!("This is a stegonagraphy tool for embedding and extracting secret messages within images.");
             println!("Options: --help, --version");
             exit(SUCCESS);
         }
 
-        if (args[1] == "--version") {
+        if (args.len() <= 2 && args[1] == "--version") {
             println!("Maya version {}", env!("CARGO_PKG_VERSION"));
             exit(SUCCESS);
         }
+        if (args.len() < 5 ) {
+            println!("Too few arguments!");
+            println!("Usage: maya encoding(Lsb,PixelValueDifferencing,Hamming) encoding-method(LeftRight, TopBottom, SinWave,CosWave, PolyFunc, FractalFunc) operation(embed/extract) <optional>'Message to be hidden'</optional> filename.ext(either the file to extract or the filename to embed into)");
+            println!("Try --help for help.");
+            exit(ERROR);
+        }
 
-        if { args.len() < 4 } {
+        if (args.len() > 6 ) {
+            println!("Too many arguments!");
+            println!("Usage: maya encoding(Lsb,PixelValueDifferencing,Hamming) encoding-method(LeftRight, TopBottom, SinWave,CosWave, PolyFunc, FractalFunc) operation(embed/extract) <optional>'Message to be hidden'</optional> filename.ext(either the file to extract or the filename to embed into)");
+            println!("Try --help for help.");
+            exit(ERROR);
+        }
+
+
+        if { args[3] == "embed" &&  args.len() != 6 } {
+            println!("You must specific a message with the embed option!");
             println!("Usage: maya encoding(Lsb,PixelValueDifferencing,Hamming) encoding-method(LeftRight, TopBottom, SinWave,CosWave, PolyFunc, FractalFunc) operation(embed/extract) <optional>'Message to be hidden'</optional> filename.ext(either the file to extract or the filename to embed into)");
             println!("Try --help for help.");
             exit(ERROR);
