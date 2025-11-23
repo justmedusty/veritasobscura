@@ -54,6 +54,7 @@ pub enum FileEncoding {
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum FileEncodingMethod {
     LeftToRight,
+    RightToLeft,
     TopToBottom,
     SinWave,
     CosWave,

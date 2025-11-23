@@ -21,7 +21,7 @@ pub mod arg_handling {
     const SUCCESS : i32 = 0;
     use std::process::exit;
     use crate::file_encoding_support;
-    use crate::file_encoding_support::file_encoding_support::{FileEncodingSupport, ImageSupport};
+    use crate::file_encoding_support::file_encoding_support::{FileEncoding, FileEncodingMethod, FileEncodingSupport, ImageSupport};
 
 
     pub fn parse_arguments<T: file_encoding_support::file_encoding_support::FileEncodingAlgorithms + file_encoding_support::file_encoding_support::FileEncodingSupport>(args: Vec<String>) -> ImageSupport<T> {
@@ -57,6 +57,34 @@ pub mod arg_handling {
             println!("Try --help for help.");
             exit(ERROR);
         }
+
+        let encoding = match args[1].as_str() {
+            "Lsb" => {FileEncoding::Lsb},
+            "PixelValueDifferencing" => {FileEncoding::PixelValueDifferencing},
+            "Hamming" => {FileEncoding::HammingMatrix},
+            _ => {
+                println!("Invalid encoding found! : {}", args[1].as_str());
+                exit(1);
+            }
+
+        };
+
+        let encoding_method = match args[2].as_str() {
+            "LeftRight" => {FileEncodingMethod::LeftToRight},
+            "TopBottom" => {FileEncodingMethod::TopToBottom},
+            "RightLeft" => {FileEncodingMethod::RightToLeft},
+            "CosWave" => {FileEncodingMethod::CosWave},
+            "SinWave" => {FileEncodingMethod::SinWave},
+            "FractalFunc" => {FileEncodingMethod::FractalFunction},
+            "PolynomialFunc" => {FileEncodingMethod::PolynomialFunction},
+            _ => {
+                println!("Invalid encoding method found! : {}", args[2].as_str());
+                exit(1);
+            }
+
+        };
+
+
 
         todo!()
 
