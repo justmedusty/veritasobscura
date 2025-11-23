@@ -21,7 +21,7 @@ pub mod arg_handling {
     const SUCCESS : i32 = 0;
     use std::process::exit;
     use crate::file_encoding_support;
-    use crate::file_encoding_support::file_encoding_support::{FileEncoding, FileEncodingMethod, FileEncodingSupport, ImageSupport};
+    use crate::file_encoding_support::file_encoding_support::{FileEncoding, FileEncodingMethod, FileEncodingSupport, ImageSupport, Operation};
 
 
     pub fn parse_arguments<T: file_encoding_support::file_encoding_support::FileEncodingAlgorithms + file_encoding_support::file_encoding_support::FileEncodingSupport>(args: Vec<String>) -> ImageSupport<T> {
@@ -83,6 +83,22 @@ pub mod arg_handling {
             }
 
         };
+
+        let operation = match args[3].as_str() {
+            "embed" => Operation::Embed,
+            "extract" => Operation::Extract,
+            _ => {
+                println!("Invalid operation found! : {}", args[3]);
+                exit(1);
+            }
+        };
+
+        let mut message = Vec::new();
+        if(operation == Operation::Embed) {
+            message = args[4].as_bytes().to_vec();
+        }
+
+
 
 
 
